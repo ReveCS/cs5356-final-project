@@ -12,13 +12,13 @@ export function useGoogleMaps() {
 }
 
 // Function to get place details
-export async function getPlaceDetails(placeId: string) {
+export async function getPlaceDetails(_placeId: string) {
   // This will be implemented when we set up the Places API
   return null;
 }
 
 // Function to search for places
-export async function searchPlaces(query: string, location?: google.maps.LatLngLiteral) {
+export async function searchPlaces(_query: string, _location?: google.maps.LatLngLiteral) {
   // This will be implemented when we set up the Places API
   return [];
 }

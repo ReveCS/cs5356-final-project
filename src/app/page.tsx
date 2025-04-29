@@ -24,7 +24,7 @@ export default function Home() {
               Discover and organize NYC entertainment spots
             </h2>
             <p className="mt-4 text-xl text-gray-500">
-              Create lists of your favorite venues, track where you've been, and see where your friends are going.
+            Create lists of your favorite venues, track where you&apos;ve been, and see where your friends are going.
             </p>
             <div className="mt-8 flex justify-center">
               <Link
