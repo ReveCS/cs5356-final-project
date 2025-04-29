@@ -11,8 +11,9 @@ export function useGoogleMaps() {
   });
 }
 
+/*
 // Function to get place details
-export async function getPlaceDetails(_placeId: string) {
+export async function getPlaceDetails(placeId: string) {
   // This will be implemented when we set up the Places API
   return null;
 }
@@ -22,3 +23,4 @@ export async function searchPlaces(_query: string, _location?: google.maps.LatLn
   // This will be implemented when we set up the Places API
   return [];
 }
+  */
