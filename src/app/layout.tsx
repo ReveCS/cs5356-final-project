@@ -1,9 +1,11 @@
+// app/layout.tsx
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/components/AuthContext';
+import MainLayout from '@/components/MainLayout';
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
@@ -13,18 +15,16 @@ export const metadata: Metadata = {
   description: 'Keep track of your favorite NYC entertainment spots',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans min-h-screen bg-gray-50`}>
         <AuthProvider>
-          {children}
+          <MainLayout>
+            {children}
+          </MainLayout>
         </AuthProvider>
       </body>
     </html>
-  ); 
+  );
 }
