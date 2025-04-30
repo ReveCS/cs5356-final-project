@@ -7,3 +7,6 @@ import PlacesList from './PlacesList';
 import PlaceCard from './PlaceCard';
 import { supabase } from '@/lib/supabase';
 
+export default function MapExplorer() {
+    
+}
