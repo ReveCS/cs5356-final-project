@@ -3,7 +3,6 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { AuthProvider } from '@/components/AuthContext';
-import MainLayout from '@/components/MainLayout';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -20,9 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${inter.variable} font-sans min-h-screen bg-gray-50`}>
         <AuthProvider>
-          <MainLayout>
-            {children}
-          </MainLayout>
+          {children}
         </AuthProvider>
       </body>
     </html>

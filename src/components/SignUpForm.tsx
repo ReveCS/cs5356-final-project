@@ -1,36 +1,33 @@
-// components/SignInForm.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthContext';
 
-export default function SignInForm() {
-  const { signIn } = useAuth();
+export default function SignUpForm() {
+  const { signUp } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
-    const { data: session, error: authError } = await signIn(email, password);
+    const { data, error: signUpError } = await signUp(email, password);
+    setLoading(false);
 
-    if (authError) {
-      setError(authError.message);
+    if (signUpError) {
+      setError(signUpError.message);
       return;
     }
 
-    if (!session) {
-      setError('Login succeeded but no session returned. Please check your credentials or confirm your email.');
-      return;
-    }
-
-    // Redirect to home page
-    router.replace('/');
+    // Success!  Redirect to home (or dashboard)
+    router.push('/');
   };
 
   return (
@@ -43,8 +40,10 @@ export default function SignInForm() {
           value={email}
           onChange={e => setEmail(e.target.value)}
           required
+          disabled={loading}
         />
       </div>
+
       <div className="mb-4">
         <label className="block mb-1">Password</label>
         <input
@@ -53,14 +52,18 @@ export default function SignInForm() {
           value={password}
           onChange={e => setPassword(e.target.value)}
           required
+          disabled={loading}
         />
       </div>
+
       {error && <p className="text-red-600 mb-2">{error}</p>}
+
       <button
         type="submit"
-        className="w-full bg-primary-600 text-white py-2 rounded"
+        className="w-full bg-primary-600 text-white py-2 rounded disabled:opacity-50"
+        disabled={loading}
       >
-        Sign In
+        {loading ? 'Creating account…' : 'Sign Up'}
       </button>
     </form>
   );
