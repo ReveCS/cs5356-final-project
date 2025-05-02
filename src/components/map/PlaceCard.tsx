@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLoadScript } from '@react-google-maps/api';
 import { supabase } from '@/lib/supabase';
-import { createBrowserClient } from '@supabase/ssr';
+import { useAuth } from '@/components/AuthContext';
 
 interface PlaceCardProps {
   place: {
@@ -45,7 +45,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
     libraries: ['places']
   });
 
-  const [user, setUser] = useState<any>(null);
+  const { user } = useAuth();
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +53,6 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
   const [isWantToTry, setIsWantToTry] = useState(false);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, []);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -119,6 +111,8 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
   }, [place.place_id, isLoaded]);
 
   const handleSavePlace = async () => {
+    console.log('Current user:', user);
+
     if (!user) {
       setError('Please sign in to save places');
       return;
@@ -135,16 +129,49 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
         place_id: place.place_id
       };
 
+      console.log('Saving place data:', placeData);
+      console.log('User ID:', user.id);
+
+      // First check if the place is already saved
+      const { data: currentData, error: fetchError } = await supabase
+        .from('saved_places')
+        .select('places')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching current places:', fetchError);
+        setError('Failed to fetch current saved places');
+        return;
+      }
+
+      // Check if place is already saved
+      const currentPlaces = currentData?.places || [];
+      const placeExists = currentPlaces.some(
+        (p: any) => p.place_id === place.place_id
+      );
+
+      if (placeExists) {
+        setError('This place is already in your saved places');
+        setIsSaved(true);
+        return;
+      }
+
       const { error } = await supabase.rpc('add_place_to_saved_places', {
         user_id_input: user.id,
         new_place: placeData
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        setError(`Failed to save place: ${error.message}`);
+        return;
+      }
       setIsSaved(true);
+      setError(null);
     } catch (err) {
       console.error('Error saving place:', err);
-      setError('Failed to save place');
+      setError('Failed to save place. Please try again.');
     }
   };
 
@@ -221,6 +248,18 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
           </svg>
         </button>
       </div>
+
+      {/* Debug info - remove in production */}
+      <div className="mb-4 p-3 bg-grey-100 rounded text-sm">
+        <p>Auth Status: {user ? 'Signed In' : 'Not Signed In'}</p>
+        {user && <p>User ID: {user.id}</p>}
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
 
       {photoUrls.length > 0 && (
         <div className="mb-6 relative">
