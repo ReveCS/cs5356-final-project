@@ -3,39 +3,64 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { GoogleMap, useLoadScript, Marker, InfoWindow } from '@react-google-maps/api';
-import { supabase } from '@/lib/supabase';
-import debounce from 'lodash/debounce';
+import SearchBar from './SearchBar';
+import PlacesList from './PlacesList';
+import PlaceCard from './PlaceCard'; // Keep for later use
+import { supabase } from '@/lib/supabase'; // Ensure supabase client is correctly configured
 
-interface Place {
+// Interface for data from Supabase 'places' table
+interface SupabasePlace {
   id: string;
   name: string;
-  address: string;
+  address: string | null;
   lat: number;
-  long: number;
-  category: string;
+  long: number; // Matches your table description
 }
 
-const mapContainerStyle = {
-  width: '100%',
-  height: '100vh'
-};
+// Interface for the original hardcoded places (if you still want to show them as markers)
+interface EntertainmentPlace {
+  id: string;
+  name: string;
+  type: 'theater' | 'museum' | 'concert' | 'sports';
+  location: {
+    lat: number;
+    lng: number; // Note: Google Maps uses 'lng'
+  };
+  description: string;
+}
 
-const center = {
-  lat: 40.7128,
-  lng: -73.9352
-};
+// --- Hardcoded Data (Optional: Keep if you want initial markers) ---
+const entertainmentPlaces: EntertainmentPlace[] = [
+  // ... (your existing place data)
+  { id: '1', name: 'Madison Square Garden', type: 'sports', location: { lat: 40.7505, lng: -73.9934 }, description: 'World-famous arena hosting sports events and concerts' },
+  { id: '2', name: 'Metropolitan Museum of Art', type: 'museum', location: { lat: 40.7794, lng: -73.9632 }, description: 'One of the world\'s largest and finest art museums' },
+  { id: '3', name: 'Broadway Theater District', type: 'theater', location: { lat: 40.7580, lng: -73.9855 }, description: 'Home to world-renowned theatrical performances' },
+  // ... etc
+];
 
+// --- Map Styles and Options ---
+const mapContainerStyle = { width: '100%', height: '100vh' };
+const center = { lat: 40.7128, lng: -73.9352 }; // Use lng for Google Maps center
 const options = {
   disableDefaultUI: true,
   zoomControl: true,
-  styles: [
-    {
-      featureType: 'poi',
-      elementType: 'labels',
-      stylers: [{ visibility: 'off' }]
-    }
-  ]
+  styles: [ { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] } ]
 };
+
+// Debounce hook (optional but recommended)
+function useDebounce(value: string, delay: number): string {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 
 export default function MapExplorer() {
   const { isLoaded, loadError } = useLoadScript({
@@ -43,124 +68,177 @@ export default function MapExplorer() {
     libraries: ['places']
   });
 
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  // --- State ---
+  const [selectedMapMarker, setSelectedMapMarker] = useState<EntertainmentPlace | null>(null); // For hardcoded markers
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [searchResults, setSearchResults] = useState<Place[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchBox, setSearchBox] = useState<google.maps.places.Autocomplete | null>(null); // Google Autocomplete instance
 
-  const onMapLoad = useCallback((map: google.maps.Map) => {
-    setMap(map);
+  // Search and Supabase List State
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce Supabase calls
+  const [supabasePlaces, setSupabasePlaces] = useState<SupabasePlace[]>([]);
+  const [isPlacesListVisible, setIsPlacesListVisible] = useState<boolean>(false);
+  const [isLoadingPlaces, setIsLoadingPlaces] = useState<boolean>(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [selectedSupabasePlace, setSelectedSupabasePlace] = useState<SupabasePlace | null>(null); // For PlaceCard later
+
+  // Ref to track if input is focused (helps manage list visibility)
+  const isInputFocused = useRef(false);
+
+  // --- Callbacks & Effects ---
+  const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
+    setMap(mapInstance);
   }, []);
 
-  const searchPlaces = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
+  const onSearchBoxLoad = useCallback((autocompleteInstance: google.maps.places.Autocomplete) => {
+    setSearchBox(autocompleteInstance);
+  }, []);
+
+  // Google Places Autocomplete selection
+  const onPlaceChanged = useCallback(() => {
+    if (searchBox) {
+      const place = searchBox.getPlace();
+      console.log("Google Place selected:", place);
+      if (place.geometry?.location && map) {
+        map.panTo(place.geometry.location);
+        map.setZoom(15);
+        setSearchTerm(place.name || ''); // Update search term
+        setIsPlacesListVisible(false); // Hide Supabase list
+        setSelectedSupabasePlace(null); // Clear Supabase selection
+        setSelectedMapMarker(null); // Clear map marker selection
+      } else {
+        console.log('Autocomplete place result missing geometry:', place);
+      }
+    }
+  }, [searchBox, map]);
+
+  // Fetch places from Supabase when debounced search term changes
+  useEffect(() => {
+    if (debouncedSearchTerm.trim() === '') {
+      setSupabasePlaces([]);
+      setIsPlacesListVisible(false); // Hide list if search is empty
+      setFetchError(null);
       return;
     }
 
-    setIsSearching(true);
-    try {
-      const { data, error } = await supabase
-        .from('places')
-        .select('*')
-        .ilike('name', `%${query}%`)
-        .limit(10);
+    const fetchPlaces = async () => {
+      setIsLoadingPlaces(true);
+      setFetchError(null);
+      setIsPlacesListVisible(true); // Show list container (will show loading state)
+      setSupabasePlaces([]); // Clear previous results immediately
 
-      if (error) throw error;
-      setSearchResults(data || []);
-    } catch (error) {
-      console.error('Error searching places:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
+      try {
+        // Use ilike for case-insensitive search on the 'name' column
+        // Adjust column name ('name') if it's different in your table
+        const { data, error } = await supabase
+          .from('places') // Your table name
+          .select('id, name, address, lat, long') // Select specific columns
+          .ilike('name', `%${debouncedSearchTerm}%`) // Case-insensitive search
+          .limit(10); // Limit results for performance
 
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      searchPlaces(query);
-    }, 300),
-    []
-  );
+        if (error) {
+          throw error;
+        }
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    debouncedSearch(query);
-  };
+        // Ensure data conforms to SupabasePlace interface (basic check)
+        if (data && Array.isArray(data)) {
+             // Explicitly cast if confident, or add runtime validation
+             const validatedData = data as SupabasePlace[];
+             setSupabasePlaces(validatedData);
+        } else {
+            setSupabasePlaces([]); // Set empty if data is not as expected
+        }
 
-  const handlePlaceSelect = (place: Place) => {
-    setSelectedPlace(place);
-    if (map) {
-      map.panTo({ lat: place.lat, lng: place.long });
-      map.setZoom(15);
-    }
-    setSearchResults([]);
-    setSearchQuery(place.name);
-  };
-
-  const getMarkerIcon = (category: string) => {
-    const colors = {
-      theater: 'red',
-      museum: 'blue',
-      concert: 'green',
-      sports: 'orange'
+      } catch (error: any) {
+        console.error("Error fetching Supabase places:", error);
+        setFetchError(error.message || 'Failed to fetch places.');
+        setSupabasePlaces([]); // Clear results on error
+      } finally {
+        setIsLoadingPlaces(false);
+      }
     };
-    return `http://maps.google.com/mapfiles/ms/icons/${colors[category as keyof typeof colors] || 'blue'}-dot.png`;
+
+    fetchPlaces();
+  }, [debouncedSearchTerm]); // Re-run effect when debounced term changes
+
+  // Handle selecting a place from *our Supabase* list
+  const handleSupabasePlaceSelect = useCallback((place: SupabasePlace) => {
+    console.log("Supabase Place selected:", place);
+    setSelectedSupabasePlace(place); // Set the selected place (for PlaceCard later)
+    setSearchTerm(place.name); // Update search bar text
+    setIsPlacesListVisible(false); // Hide the list
+    setSelectedMapMarker(null); // Clear any map InfoWindow
+
+    // Pan the map to the selected Supabase place
+    if (map && place.lat && place.long) {
+       map.panTo({ lat: place.lat, lng: place.long }); // Use lng for Google Maps
+       map.setZoom(15);
+    }
+    // Trigger showing the PlaceCard for 'place' in the next step
+  }, [map]);
+
+  // Update search term state
+  const handleSearchTermChange = (term: string) => {
+    setSearchTerm(term);
+     setSelectedSupabasePlace(null); // Clear Supabase selection when typing
+     if (term.trim() === '') {
+         setIsPlacesListVisible(false); // Hide immediately if cleared
+     }
   };
 
-  if (loadError) return <div>Error loading maps</div>;
-  if (!isLoaded) return <div>Loading...</div>;
+  // Show list on focus if there's a search term
+  const handleFocus = () => {
+    isInputFocused.current = true;
+    if (searchTerm.trim() !== '') {
+       // Re-show list if there was a term and results/loading/error
+       setIsPlacesListVisible(true);
+    }
+  };
+
+  // Hide list on blur, using a delay to allow clicks on list items
+  const handleBlur = () => {
+     isInputFocused.current = false;
+    // Delay hiding the list to allow click events on PlacesList to register
+    setTimeout(() => {
+        // Only hide if the input is *still* not focused (user didn't click back in)
+        if (!isInputFocused.current) {
+            setIsPlacesListVisible(false);
+        }
+    }, 150); // Adjust delay ms as needed
+  };
+
+
+  // --- Marker Icon Logic (For hardcoded places, if kept) ---
+  const getMarkerIcon = (type: EntertainmentPlace['type']) => {
+    const colors = { theater: 'red', museum: 'blue', concert: 'green', sports: 'orange' };
+    const color = colors[type] || 'purple';
+    return `http://maps.google.com/mapfiles/ms/icons/${color}-dot.png`;
+  };
+
+  // --- Render Logic ---
+  if (loadError) return <div>Error loading maps: {loadError.message}</div>;
+  if (!isLoaded) return <div>Loading Maps...</div>;
 
   return (
     <div className="relative w-full h-screen">
-      <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-10 w-[600px]">
-        <div className="relative group">
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl transform transition-all duration-300 group-hover:shadow-blue-500/20 group-hover:scale-[1.02]"></div>
-          <div className="relative flex items-center px-4 py-2">
-            <svg 
-              className="w-6 h-6 text-gray-500 mr-3" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
-              />
-            </svg>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="Search for entertainment venues in NYC..."
-              className="w-full bg-transparent border-none outline-none text-lg text-black placeholder-gray-400 py-3 focus:ring-0"
-            />
-          </div>
-          {searchResults.length > 0 && (
-            <div className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-96 overflow-y-auto">
-              {searchResults.map((place) => (
-                <button
-                  key={place.id}
-                  onClick={() => handlePlaceSelect(place)}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors duration-150"
-                >
-                  <div className="font-medium text-gray-900">{place.name}</div>
-                  <div className="text-sm text-gray-500">{place.address}</div>
-                </button>
-              ))}
-            </div>
-          )}
-          {isSearching && (
-            <div className="absolute w-full mt-2 bg-white rounded-lg shadow-lg p-4 text-center text-gray-500">
-              Searching...
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Render SearchBar */}
+      <SearchBar
+        searchTerm={searchTerm}
+        onLoad={onSearchBoxLoad}
+        onPlaceChanged={onPlaceChanged}
+        onSearchTermChange={handleSearchTermChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur} // Pass the delayed blur handler
+      />
+
+      {/* Render PlacesList conditionally */}
+      <PlacesList
+        places={supabasePlaces}
+        onPlaceSelect={handleSupabasePlaceSelect}
+        isVisible={isPlacesListVisible}
+        isLoading={isLoadingPlaces}
+        error={fetchError}
+      />
 
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
@@ -169,31 +247,49 @@ export default function MapExplorer() {
         options={options}
         onLoad={onMapLoad}
       >
-        {searchResults.map((place) => (
+        {/* Render Markers for original hardcoded places (Optional) */}
+        {entertainmentPlaces.map((place) => (
           <Marker
-            key={place.id}
-            position={{ lat: place.lat, lng: place.long }}
+            key={`marker-${place.id}`} // Add prefix to avoid key conflicts if IDs overlap
+            position={place.location}
             icon={{
-              url: getMarkerIcon(place.category),
+              url: getMarkerIcon(place.type),
               scaledSize: new google.maps.Size(32, 32)
             }}
-            onClick={() => handlePlaceSelect(place)}
+            onClick={() => {
+                setSelectedMapMarker(place);
+                setSelectedSupabasePlace(null); // Clear Supabase selection
+                setIsPlacesListVisible(false); // Hide list on map click
+            }}
+            title={place.name}
           />
         ))}
 
-        {selectedPlace && (
+        {/* InfoWindow for hardcoded places clicked on the map */}
+        {selectedMapMarker && (
           <InfoWindow
-            position={{ lat: selectedPlace.lat, lng: selectedPlace.long }}
-            onCloseClick={() => setSelectedPlace(null)}
+            position={selectedMapMarker.location}
+            onCloseClick={() => setSelectedMapMarker(null)}
+            options={{ pixelOffset: new google.maps.Size(0, -35) }}
           >
-            <div className="p-3">
-              <h3 className="font-bold text-lg text-gray-800">{selectedPlace.name}</h3>
-              <p className="text-sm text-gray-600 mt-1">{selectedPlace.address}</p>
-              <p className="text-sm text-gray-500 mt-1 capitalize">{selectedPlace.category}</p>
+            <div className="p-2 max-w-xs">
+              <h3 className="font-bold text-md text-gray-800 mb-1">{selectedMapMarker.name}</h3>
+              <p className="text-sm text-gray-600">{selectedMapMarker.description}</p>
             </div>
           </InfoWindow>
         )}
       </GoogleMap>
+
+      {/* Placeholder for where PlaceCard will go, controlled by selectedSupabasePlace */}
+      {selectedSupabasePlace && (
+        <div className="absolute bottom-4 left-4 z-10 bg-white p-4 rounded-lg shadow-md">
+           {/* Replace with actual PlaceCard component later */}
+           <h3 className="font-bold">{selectedSupabasePlace.name}</h3>
+           <p>{selectedSupabasePlace.address}</p>
+           <p>Lat: {selectedSupabasePlace.lat}, Long: {selectedSupabasePlace.long}</p>
+           <button onClick={() => setSelectedSupabasePlace(null)} className="text-sm text-blue-500 mt-2">Close</button>
+        </div>
+      )}
     </div>
   );
 }
