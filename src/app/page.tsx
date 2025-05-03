@@ -60,7 +60,7 @@ export default function HomePage() {
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900">NYC Entertainment List Keeper</h1>
+          <h1 className="text-xl font-bold text-gray-900">Gotham Guide</h1>
           <button
             onClick={() => router.replace('/auth/signin')}
             className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"

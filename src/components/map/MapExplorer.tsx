@@ -6,6 +6,7 @@ import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { supabase } from '@/lib/supabase';
 import debounce from 'lodash/debounce';
 import PlaceCard from './PlaceCard';
+import NavigationBar from './NavigationBar';
 
 interface Place {
   id: string;
@@ -119,6 +120,8 @@ export default function MapExplorer() {
 
   return (
     <div className="relative w-full h-screen">
+      <NavigationBar /> 
+      
       <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-10 w-[600px]">
         <div className="relative group">
           <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl transform transition-all duration-300 group-hover:shadow-blue-500/20 group-hover:scale-[1.02]"></div>
