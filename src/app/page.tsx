@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from "@/components/AuthContext"
 import { GoogleMap, useLoadScript, Marker, InfoWindow } from "@react-google-maps/api"
 import { PlusCircle, MapPin, List, Star, ChevronRight } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -26,7 +26,7 @@ interface ListItem {
 }
 
 export default function HomePage() {
-  const { user, loading } = useAuth()
+  const { user, loading, firstName } = useAuth()
   const router = useRouter()
 
   // Redirect unauthenticated users to /auth/signin
@@ -75,7 +75,6 @@ export default function HomePage() {
       title: "Historic Landmarks",
       places: 15,
       author: "Olivia",
-      authorAvatar: "/placeholder.svg?height=40&width=40",
     },
   ]
 
@@ -159,11 +158,11 @@ export default function HomePage() {
           <h1 className="text-xl font-bold text-gray-900">Gotham Guide</h1>
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => router.push("/profile")} className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg?height=32&width=32" alt={user.name || "User"} />
-                <AvatarFallback>{user.name?.charAt(0) || "U"}</AvatarFallback>
+            <Avatar className="h-8 w-8">
+                {/* <AvatarImage src={user?.avatar_url || "/placeholder.svg?height=32&width=32"} alt={firstName || "User"} /> */}
+                <AvatarFallback>{firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
               </Avatar>
-              <span className="hidden md:inline">{user.name || "User"}</span>
+              <span className="hidden md:inline">{firstName || user?.email || "User"}</span>
             </Button>
             <Button variant="outline" onClick={() => router.replace("/auth/signin")} size="sm">
               Sign Out
@@ -177,9 +176,6 @@ export default function HomePage() {
         <div className="w-full md:w-1/2 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">Today's Recommendation</h2>
-            <Button variant="ghost" size="sm" className="text-sm flex items-center gap-1">
-              View all <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
 
           <div className="relative flex-1 overflow-hidden">
@@ -268,12 +264,12 @@ export default function HomePage() {
               </Button>
             </div>
 
-            <ScrollArea className="h-[160px] rounded-lg border bg-white p-4">
-              <div className="flex flex-col gap-3">
+            <ScrollArea className="w-148 whitespace-nowrap rounded-md">
+              <div className="flex w-max space-x-4 p-4">
                 {recommendedLists.map((list) => (
                   <Card key={list.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <CardContent className="p-3 flex items-center gap-3">
-                      <div className="bg-orange-100 p-2 rounded-lg">
+                      <div className="bg-orange-100 p-2 rounded-md">
                         <List className="h-5 w-5 text-orange-600" />
                       </div>
                       <div className="flex-1">
@@ -282,7 +278,6 @@ export default function HomePage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
-                          <AvatarImage src={list.authorAvatar || "/placeholder.svg"} alt={list.author} />
                           <AvatarFallback>{list.author.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <span className="text-xs text-gray-500">{list.author}</span>
@@ -291,7 +286,8 @@ export default function HomePage() {
                   </Card>
                 ))}
               </div>
-            </ScrollArea>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea >
           </div>
 
           {/* My Lists Section */}
