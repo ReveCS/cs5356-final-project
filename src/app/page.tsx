@@ -120,7 +120,7 @@ export default function HomePage() {
     // Optional: mapInstance.setOptions({ maxZoom: 15 });
   }, [])
 
-  if (loading || !user) {
+  if (loading && !user) {
     return (
       <div className="h-screen flex items-center justify-center">
         <p>Loading…</p>

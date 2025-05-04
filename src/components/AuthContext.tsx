@@ -47,10 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchProfile(session.user.id);
+          setLoading(false);
         } else {
           setFirstName(null); 
+          setLoading(false);
         }
-        setLoading(false);
       }
     };
 
@@ -63,10 +64,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(newSession?.user ?? null);
         if (newSession?.user) {
           await fetchProfile(newSession.user.id);
+          setLoading(false);
         } else {
           setFirstName(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
     return () => {
