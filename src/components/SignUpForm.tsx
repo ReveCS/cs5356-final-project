@@ -10,6 +10,8 @@ export default function SignUpForm() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +20,11 @@ export default function SignUpForm() {
     setError(null);
     setLoading(true);
 
-    const { data, error: signUpError } = await signUp(email, password);
+    // TODO: Update the signUp function in AuthContext to accept
+    // firstName and lastName if you want to save them.
+    // For now, we just call it with email and password.
+
+    const { data, error: signUpError } = await signUp(email, password, firstName, lastName);
     setLoading(false);
 
     if (signUpError) {
@@ -32,6 +38,29 @@ export default function SignUpForm() {
 
   return (
     <form onSubmit={onSubmit} className="w-full max-w-sm">
+      <div className="mb-4">
+        <label className="block mb-1">First Name</label>
+        <input
+          type="text"
+          className="w-full border px-3 py-2"
+          value={firstName}
+          onChange={e => setFirstName(e.target.value)}
+          required
+          disabled={loading}
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block mb-1">Last Name</label>
+        <input
+          type="text"
+          className="w-full border px-3 py-2"
+          value={lastName}
+          onChange={e => setLastName(e.target.value)}
+          required
+          disabled={loading}
+        />
+      </div>
       <div className="mb-4">
         <label className="block mb-1">Email</label>
         <input
@@ -60,10 +89,10 @@ export default function SignUpForm() {
 
       <button
         type="submit"
-        className="w-full bg-primary-600 text-white py-2 rounded disabled:opacity-50"
+        className="w-full bg-black text-white py-2 rounded disabled:opacity-50"
         disabled={loading}
       >
-        {loading ? 'Creating account…' : 'Sign Up'}
+        {loading ? 'Creating account…' : 'Create Account'}
       </button>
     </form>
   );

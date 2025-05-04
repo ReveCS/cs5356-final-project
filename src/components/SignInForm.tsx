@@ -58,7 +58,7 @@ export default function SignInForm() {
       {error && <p className="text-red-600 mb-2">{error}</p>}
       <button
         type="submit"
-        className="w-full bg-primary-600 text-white py-2 rounded"
+        className="w-full bg-black text-white py-2 rounded disabled:opacity-50"
       >
         Sign In
       </button>

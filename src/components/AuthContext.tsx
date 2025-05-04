@@ -13,7 +13,12 @@ type AuthContextType = {
     error: AuthError | null;
     data: Session | null;
   }>;
-  signUp: (email: string, password: string) => Promise<{
+  signUp: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ) => Promise<{
     error: AuthError | null;
     data: Session | null;
   }>;
@@ -58,7 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { data: data.session, error };
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    firstName: string, // Add firstName parameter
+    lastName: string   // Add lastName parameter
+  ) => {
     // 1️⃣ Create the auth user
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -73,7 +83,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .insert({
           id: userId,
           role: 'user',         // default role
-          username: 'temp',     // placeholder username
+          first_name: firstName, // Use the passed firstName
+          last_name: lastName,
           avatar_url: null,     // explicit null
         });
 
