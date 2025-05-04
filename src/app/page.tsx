@@ -29,7 +29,7 @@ export default function HomePage() {
 
   const [selectedMarker, setSelectedMarker] = useState<RecommendedPlace | null>(null);
 
-  const mapContainerStyle = { width: '100%', height: '100%' };
+  const mapContainerStyle = { width: '90%', height: '90%' };
   const mapCenter = { lat: 40.74, lng: -73.98 }; // Center of NYC
   const mapOptions = {
     disableDefaultUI: true, zoomControl: true, scrollwheel: false, draggable: false,
@@ -58,7 +58,7 @@ export default function HomePage() {
   // Logged-in view:
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
+      <header className="bg-gray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-900">Gotham Guide</h1>
           <button
@@ -73,7 +73,7 @@ export default function HomePage() {
       <main className="flex-1 flex overflow-hidden"> {/* Flex container for columns */}
 
         {/* Left Column: Map */}
-        <div className="w-1/2 h-full border-r border-gray-200"> {/* Adjust width (e.g., w-1/2, w-2/3) */}
+        <div className="w-1/2 h-full"> {/* Adjust width (e.g., w-1/2, w-2/3) */}
            {/* Map Rendering Logic */}
            {mapLoadError && <div className="flex items-center justify-center h-full bg-gray-200 text-red-600">Error loading map.</div>}
            {!isMapLoaded && !mapLoadError && <div className="flex items-center justify-center h-full bg-gray-200">Loading Map...</div>}
@@ -81,6 +81,7 @@ export default function HomePage() {
              <GoogleMap
                mapContainerStyle={mapContainerStyle}
                zoom={11} // Adjust zoom level for overview
+               mapContainerClassName="rounded-xl overflow-hidden h-full w-full shadow-md"
                center={mapCenter}
                options={mapOptions}
                onLoad={onMapLoad}
@@ -146,4 +147,3 @@ export default function HomePage() {
     </div>
   );
 }
-
