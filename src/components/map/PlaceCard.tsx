@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthContext';
 import { Place } from '@/types/place';
 
 // Move libraries array outside component
-const libraries: ("places")[] = ["places"];
+const libraries: ('places')[] = ['places'];
 
 interface PlaceCardProps {
   place: Place;
@@ -39,7 +39,7 @@ interface PlaceDetails {
 export default function PlaceCard({ place, onClose }: PlaceCardProps) {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries
+    libraries,
   });
 
   const { user } = useAuth();
@@ -58,7 +58,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
     // Create a map instance for the Places service
     const map = new google.maps.Map(document.createElement('div'), {
       center: { lat: place.lat, lng: place.long },
-      zoom: 15
+      zoom: 15,
     });
 
     const fetchPlaceDetails = async () => {
@@ -66,10 +66,10 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
       setError(null);
 
       try {
-        console.log('Fetching details for place:', place);
+        console.log('Fetching details for place ID:', place.place_id);
         const service = new google.maps.places.PlacesService(map);
 
-        const request = {
+        const request: google.maps.places.PlaceDetailsRequest = {
           placeId: place.place_id,
           fields: [
             'name',
@@ -81,8 +81,8 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
             'website',
             'formatted_phone_number',
             'opening_hours',
-            'price_level'
-          ]
+            'price_level',
+          ],
         };
 
         console.log('Making Places API request with:', request);
@@ -93,33 +93,22 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
 
           if (status === google.maps.places.PlacesServiceStatus.OK && result) {
             setPlaceDetails(result as PlaceDetails);
-            
-            if (result.photos && result.photos.length > 0) {
-              console.log('Photos found:', result.photos.length);
-              const photos = result.photos.slice(0, 5); // Get up to 5 photos
-              setAvailablePhotos(photos); // Store the photo objects
-              setCurrentPhotoIndex(0); // Start at the first photo
 
-              // Try to load the first photo initially
+            if (result.photos && result.photos.length > 0) {
+              const photos = result.photos.slice(0, 5);
+              setAvailablePhotos(photos);
+              setCurrentPhotoIndex(0);
+
               try {
-                const firstPhotoUrl = photos[0].getUrl({
-                  maxWidth: 800,
-                  maxHeight: 600
-                });
-                if (firstPhotoUrl) {
-                  setPhotoUrl(firstPhotoUrl);
-                } else {
-                  console.log('First photo has no URL.');
-                  setPhotoUrl(null);
-                }
+                const firstPhotoUrl = photos[0].getUrl({ maxWidth: 800, maxHeight: 600 });
+                setPhotoUrl(firstPhotoUrl || null);
               } catch (err) {
                 console.error('Error getting URL for first photo:', err);
                 setPhotoUrl(null);
               }
             } else {
-              console.log('No photos available for this place');
-              setAvailablePhotos([]); // Ensure photos state is empty
-              setPhotoUrl(null); // Ensure photoUrl is null if no photos exist
+              setAvailablePhotos([]);
+              setPhotoUrl(null);
             }
           } else {
             console.error('Failed to fetch place details. Status:', status);
@@ -135,7 +124,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
     };
 
     fetchPlaceDetails();
-  }, [place.place_id, isLoaded, place.lat, place.long]);
+  }, [isLoaded, place.place_id, place.lat, place.long]);
 
   useEffect(() => {
     const checkPlaceStatus = async () => {
@@ -147,29 +136,25 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
 
       try {
         // Check Want to Try list
-        const { data: wantData, error: wantError } = await supabase
+        const { data: wantData } = await supabase
           .from('want_to_try_places')
           .select('places')
           .eq('user_id', user.id)
           .single();
 
-        if (wantError && wantError.code !== 'PGRST116') {
-          console.error('Error checking want_to_try_places:', wantError);
-        } else if (wantData?.places) {
+        if (wantData?.places) {
           const wantToTryPlaces = Array.isArray(wantData.places) ? wantData.places : [];
           setIsInWantToTry(wantToTryPlaces.some(p => p.place_id === place.place_id));
         }
 
         // Check Saved Places list
-        const { data: savedData, error: savedError } = await supabase
+        const { data: savedData } = await supabase
           .from('saved_places')
           .select('places')
           .eq('user_id', user.id)
           .single();
 
-        if (savedError && savedError.code !== 'PGRST116') {
-          console.error('Error checking saved_places:', savedError);
-        } else if (savedData?.places) {
+        if (savedData?.places) {
           const savedPlaces = Array.isArray(savedData.places) ? savedData.places : [];
           setIsInSaved(savedPlaces.some(p => p.place_id === place.place_id));
         }
@@ -179,87 +164,58 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
       }
     };
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     checkPlaceStatus();
   }, [user, place.place_id]);
 
-  // --- Photo Navigation --- 
+  // --- Photo Navigation ---
   const loadPhotoAtIndex = (index: number) => {
     if (index >= 0 && index < availablePhotos.length) {
       try {
-        const url = availablePhotos[index].getUrl({
-          maxWidth: 800,
-          maxHeight: 600
-        });
-        if (url) {
-          setPhotoUrl(url);
-          setCurrentPhotoIndex(index);
-        } else {
-          console.log(`Photo at index ${index} has no URL.`);
-          setPhotoUrl(null); // Show placeholder if URL is invalid
-        }
+        const url = availablePhotos[index].getUrl({ maxWidth: 800, maxHeight: 600 });
+        setPhotoUrl(url || null);
+        setCurrentPhotoIndex(index);
       } catch (err) {
         console.error(`Error getting URL for photo at index ${index}:`, err);
-        setPhotoUrl(null); // Show placeholder on error
+        setPhotoUrl(null);
       }
     }
   };
 
-  const handleNextPhoto = () => {
-    const nextIndex = currentPhotoIndex + 1;
-    if (nextIndex < availablePhotos.length) {
-      loadPhotoAtIndex(nextIndex);
-    }
-  };
-
-  const handlePrevPhoto = () => {
-    const prevIndex = currentPhotoIndex - 1;
-    if (prevIndex >= 0) {
-      loadPhotoAtIndex(prevIndex);
-    }
-  };
+  const handleNextPhoto = () => loadPhotoAtIndex(currentPhotoIndex + 1);
+  const handlePrevPhoto = () => loadPhotoAtIndex(currentPhotoIndex - 1);
   // ------------------------
 
   const handleWantToTry = async () => {
     if (!user) return;
-
     setIsLoading(true);
     setError(null);
 
     try {
-      // First check if the record exists
-      const { data: existingData, error: _fetchError } = await supabase
+      const { data: existingData } = await supabase
         .from('want_to_try_places')
         .select('places')
         .eq('user_id', user.id)
         .single();
 
       const currentPlaces = existingData?.places || [];
-      const isCurrentlyInList = currentPlaces.some((p: Place) => p.place_id === place.place_id);
+      const isCurrentlyInList = currentPlaces.some(p => p.place_id === place.place_id);
       let updatedPlaces;
 
       if (isCurrentlyInList) {
-        // Remove from list
-        updatedPlaces = currentPlaces.filter((p: Place) => p.place_id !== place.place_id);
+        updatedPlaces = currentPlaces.filter(p => p.place_id !== place.place_id);
         setIsInWantToTry(false);
       } else {
-        // Add to list
         updatedPlaces = [...currentPlaces, place];
         setIsInWantToTry(true);
       }
 
       let updateError;
       if (!existingData) {
-        // If no record exists, create a new one
         const { error } = await supabase
           .from('want_to_try_places')
-          .insert({
-            user_id: user.id,
-            places: updatedPlaces
-          });
+          .insert({ user_id: user.id, places: updatedPlaces });
         updateError = error;
       } else {
-        // If record exists, update it
         const { error } = await supabase
           .from('want_to_try_places')
           .update({ places: updatedPlaces })
@@ -270,14 +226,12 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
       if (updateError) {
         console.error('Error updating want_to_try_places:', updateError);
         setError('Failed to update Want to Try list.');
-        // Revert the state if the update failed
         setIsInWantToTry(isCurrentlyInList);
       }
     } catch (err) {
       console.error('Error updating Want to Try list:', err);
       setError('An unexpected error occurred.');
-      // Revert the state if the update failed
-      setIsInWantToTry(!isInWantToTry);
+      setIsInWantToTry(prev => !prev);
     } finally {
       setIsLoading(false);
     }
@@ -285,44 +239,35 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
 
   const handleSavePlace = async () => {
     if (!user) return;
-
     setIsLoading(true);
     setError(null);
 
     try {
-      // First check if the record exists
-      const { data: existingData, error: _fetchError } = await supabase
+      const { data: existingData } = await supabase
         .from('saved_places')
         .select('places')
         .eq('user_id', user.id)
         .single();
 
       const currentPlaces = existingData?.places || [];
-      const isCurrentlyInList = currentPlaces.some((p: Place) => p.place_id === place.place_id);
+      const isCurrentlyInList = currentPlaces.some(p => p.place_id === place.place_id);
       let updatedPlaces;
 
       if (isCurrentlyInList) {
-        // Remove from list
-        updatedPlaces = currentPlaces.filter((p: Place) => p.place_id !== place.place_id);
+        updatedPlaces = currentPlaces.filter(p => p.place_id !== place.place_id);
         setIsInSaved(false);
       } else {
-        // Add to list
         updatedPlaces = [...currentPlaces, place];
         setIsInSaved(true);
       }
 
       let updateError;
       if (!existingData) {
-        // If no record exists, create a new one
         const { error } = await supabase
           .from('saved_places')
-          .insert({
-            user_id: user.id,
-            places: updatedPlaces
-          });
+          .insert({ user_id: user.id, places: updatedPlaces });
         updateError = error;
       } else {
-        // If record exists, update it
         const { error } = await supabase
           .from('saved_places')
           .update({ places: updatedPlaces })
@@ -333,14 +278,12 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
       if (updateError) {
         console.error('Error updating saved_places:', updateError);
         setError('Failed to update Saved Places list.');
-        // Revert the state if the update failed
         setIsInSaved(isCurrentlyInList);
       }
     } catch (err) {
       console.error('Error updating Saved Places list:', err);
       setError('An unexpected error occurred.');
-      // Revert the state if the update failed
-      setIsInSaved(!isInSaved);
+      setIsInSaved(prev => !prev);
     } finally {
       setIsLoading(false);
     }

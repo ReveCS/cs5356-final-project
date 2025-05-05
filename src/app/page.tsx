@@ -160,8 +160,8 @@ export default function HomePage() {
     fetchRandomPlace();
   }, [user]); // Depend only on user object
 
-  const onMapLoad = useCallback((_mapInstance: google.maps.Map) => { // Prefix unused variable with _
-    // Optional: mapInstance.setOptions({ maxZoom: 15 });
+  const onMapLoad = useCallback(() => {
+
   }, []);
 
   const handleSignOut = async () => {
@@ -218,7 +218,7 @@ export default function HomePage() {
         <div className="w-full md:w-1/2 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">
-              Today's Recommendation
+              Today&apos;s Recommendation
               {isFetchingRecommendation && <span className="text-sm font-normal text-gray-500 ml-2">(Loading...)</span>}
               {!isFetchingRecommendation && !dailyRecommendationPlace && <span className="text-sm font-normal text-gray-500 ml-2">(Unavailable)</span>}
             </h2>

@@ -1,7 +1,7 @@
 // c:\Users\InvisiHands\Cornell Tech\CS-5356\final-project\src\components\map\MapExplorer.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 import { supabase } from '@/lib/supabase';
 import debounce from 'lodash/debounce';
@@ -90,7 +90,7 @@ export default function MapExplorer() {
 
       fetchPlace();
     }
-  }, [searchParams]);
+  }, [searchParams, map]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -120,12 +120,16 @@ export default function MapExplorer() {
     }
   }, []);
 
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      searchPlaces(query);
-    }, 300),
-    []
+  const debouncedSearch = useMemo(
+    () => debounce((query: string) => searchPlaces(query), 300),
+    [searchPlaces]
   );
+  
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
