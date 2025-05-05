@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import debounce from 'lodash/debounce';
 import PlaceCard from './PlaceCard';
 import NavigationBar from './NavigationBar';
+import ListComponent from './ListComponent';
 
 interface Place {
   id: string;
@@ -52,6 +53,7 @@ export default function MapExplorer() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<Place | null>(null);
+  const [isListOpen, setIsListOpen] = useState(false);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -121,6 +123,37 @@ export default function MapExplorer() {
   return (
     <div className="relative w-full h-screen">
       <NavigationBar /> 
+      
+      {/* List Toggle Button */}
+      <button
+        onClick={() => setIsListOpen(!isListOpen)}
+        className="absolute top-6 right-6 z-20 bg-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+        aria-label="Toggle Want to Try list"
+      >
+        <svg 
+          className="w-6 h-6 text-gray-700" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            strokeWidth={2} 
+            d="M4 6h16M4 12h16M4 18h16" 
+          />
+        </svg>
+      </button>
+
+      {/* List Component */}
+      <ListComponent
+        isOpen={isListOpen}
+        onClose={() => setIsListOpen(false)}
+        onPlaceSelect={(place) => {
+          handlePlaceSelect(place);
+          setIsListOpen(false);
+        }}
+      />
       
       <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-10 w-[600px]">
         <div className="relative group">
