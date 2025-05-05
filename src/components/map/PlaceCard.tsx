@@ -199,7 +199,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
         .eq('user_id', user.id)
         .single();
 
-      const currentPlaces = existingData?.places || [];
+      const currentPlaces: Place[] = (existingData?.places as Place[]) || [];
       const isCurrentlyInList = currentPlaces.some(p => p.place_id === place.place_id);
       let updatedPlaces;
 
@@ -251,7 +251,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
         .eq('user_id', user.id)
         .single();
 
-      const currentPlaces = existingData?.places || [];
+        const currentPlaces: Place[] = (existingData?.places as Place[]) || [];
       const isCurrentlyInList = currentPlaces.some(p => p.place_id === place.place_id);
       let updatedPlaces;
 
