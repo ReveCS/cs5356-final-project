@@ -9,4 +9,6 @@ export interface Place {
   address?: string;
   category?: string;   // Or potentially a more specific type like 'restaurant' | 'bar' | etc.
   place_id?: string;   // Google Place ID
-} 
+  lat?: number;        // Latitude from Supabase/MapExplorer
+  long?: number;       // Longitude from Supabase/MapExplorer
+}

@@ -57,7 +57,8 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
 
     // Create a map instance for the Places service
     const map = new google.maps.Map(document.createElement('div'), {
-      center: { lat: place.lat, lng: place.long },
+      // Use lat/long directly and assert non-null based on parent component logic
+      center: { lat: place.lat!, lng: place.long! },
       zoom: 15,
     });
 
@@ -124,7 +125,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
     };
 
     fetchPlaceDetails();
-  }, [isLoaded, place.place_id, place.lat, place.long]);
+  }, [isLoaded, place.place_id, place.lat, place.long]); // Keep dependencies
 
   useEffect(() => {
     const checkPlaceStatus = async () => {
