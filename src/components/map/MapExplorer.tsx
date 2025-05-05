@@ -157,13 +157,15 @@ export default function MapExplorer() {
     router.push(`/map?${params.toString()}`);
   };
 
-  const getMarkerIcon = (category: string) => {
+  // Allow category to be optional and provide a default
+  const getMarkerIcon = (category?: string) => {
     const colors = {
       theater: 'red',
       museum: 'blue',
       concert: 'green',
       sports: 'orange'
     };
+    // Use optional chaining and nullish coalescing for safety and clarity
     return `http://maps.google.com/mapfiles/ms/icons/${colors[category as keyof typeof colors] || 'blue'}-dot.png`;
   };
 
@@ -278,7 +280,8 @@ export default function MapExplorer() {
           <Marker
             position={{ lat: selectedMarker.lat, lng: selectedMarker.long }}
             icon={{
-              url: selectedMarker.category ? getMarkerIcon(selectedMarker.category) : 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+              // Pass category directly; getMarkerIcon handles undefined
+              url: getMarkerIcon(selectedMarker.category),
               scaledSize: new google.maps.Size(40, 40)
             }}
             animation={google.maps.Animation.BOUNCE}
