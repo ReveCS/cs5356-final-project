@@ -51,6 +51,12 @@ interface DailyPlace {
   place_id: string;
 }
 
+// Interface for storing the recommendation in localStorage
+interface StoredRecommendation {
+  place: DailyPlace;
+  fetchDate: string; // YYYY-MM-DD format
+}
+
 // Memoize recommended lists to prevent recreation
 const RECOMMENDED_LISTS: ListItem[] = [
   {
@@ -139,30 +145,54 @@ export default function HomePage() {
   // Fetch daily recommendation
   useEffect(() => {
     if (!mounted || !user) return;
-
+  
+    const today = new Date().toISOString().split('T')[0]; // Get date in YYYY-MM-DD format
+    const storageKey = `dailyRecommendation_${user.id}`; // User-specific key
+  
     const fetchRandomPlace = async () => {
       setIsFetchingRecommendation(true);
       try {
         const { data, error } = await supabase.rpc('get_random_place');
-
+  
         if (error) {
           console.error("Error fetching random place:", error);
           throw error;
         }
-
+  
         if (data && data.length > 0) {
-          setDailyRecommendationPlace({ ...data[0], description: "" });
+          const newPlace: DailyPlace = { ...data[0], description: "" };
+          setDailyRecommendationPlace(newPlace);
+          // Store the new recommendation and today's date
+          const recommendationToStore: StoredRecommendation = {
+            place: newPlace,
+            fetchDate: today,
+          };
+          localStorage.setItem(storageKey, JSON.stringify(recommendationToStore));
         } else {
           setDailyRecommendationPlace(null);
+          localStorage.removeItem(storageKey); // Remove if fetch returns nothing
         }
       } catch (error) {
         console.error("Error fetching random place:", error);
         setDailyRecommendationPlace(null);
+        // Optionally clear storage on error too, or leave stale data?
+        // localStorage.removeItem(storageKey); 
       } finally {
         setIsFetchingRecommendation(false);
       }
     };
-
+  
+    // Check localStorage first
+    const storedData = localStorage.getItem(storageKey);
+    if (storedData) {
+      const parsedData: StoredRecommendation = JSON.parse(storedData);
+      if (parsedData.fetchDate === today && parsedData.place) {
+        setDailyRecommendationPlace(parsedData.place);
+        setIsFetchingRecommendation(false);
+        return; // Found valid data for today, no need to fetch
+      }
+    }
+    // If no valid data in localStorage for today, fetch a new one
     fetchRandomPlace();
   }, [mounted, user]);
 

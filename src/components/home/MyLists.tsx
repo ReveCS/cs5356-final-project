@@ -63,8 +63,6 @@ export default function MyLists() {
     fetchPlaces();
   }, [user]);
 
-  if (!user) return null;
-
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -131,27 +129,29 @@ export default function MyLists() {
   );
 
   return (
-    <div className="h-full space-y-6">
-      <ListSection
-        title="Want to Try"
-        icon={List}
-        places={wantToTryPlaces}
-        emptyMessage="No places in your Want to Try list yet"
-      />
+    <ScrollArea className="h-full"> {/* Make the entire component scrollable */}
+      <div className="space-y-6 p-1"> {/* Add some padding if needed */}
+        <ListSection
+          title="Want to Try"
+          icon={List}
+          places={wantToTryPlaces}
+          emptyMessage="No places in your Want to Try list yet"
+        />
 
-      <ListSection
-        title="Saved Places"
-        icon={Star}
-        places={savedPlaces}
-        emptyMessage="No saved places yet"
-      />
+        <ListSection
+          title="Saved Places"
+          icon={Star}
+          places={savedPlaces}
+          emptyMessage="No saved places yet"
+        />
 
-      <div className="pt-2">
-        <Button variant="outline" className="w-full gap-2">
-          <Plus className="h-4 w-4" />
-          Create New List
-        </Button>
+        <div className="pt-2">
+          <Button variant="outline" className="w-full gap-2">
+            <Plus className="h-4 w-4" />
+            Create New List
+          </Button>
+        </div>
       </div>
-    </div>
+    </ScrollArea>
   );
 } 
