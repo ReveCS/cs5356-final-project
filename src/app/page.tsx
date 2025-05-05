@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from "@/components/AuthContext"
 import { GoogleMap, useLoadScript, Marker, InfoWindow } from "@react-google-maps/api"
 import { PlusCircle, MapPin, List, Star, ChevronRight } from "lucide-react"
+import { supabase } from "@/lib/supabase" // Import supabase client
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 interface RecommendedPlace {
   id: string
   name: string
-  location: { lat: number; lng: number }
+  location: { lat: number; lng: number } // Keep lng here for GoogleMap compatibility
   description: string
 }
 
@@ -25,6 +26,14 @@ interface ListItem {
   author: string
 }
 
+// Interface matching the structure returned by our SQL function + description
+interface DailyPlace {
+  id: string;
+  name: string;
+  lat: number;
+  long: number; // Matches Supabase table column
+  description?: string; // Optional description
+}
 export default function HomePage() {
   const { user, loading, firstName } = useAuth()
   const router = useRouter()
@@ -43,6 +52,8 @@ export default function HomePage() {
 
   const [selectedMarker, setSelectedMarker] = useState<RecommendedPlace | null>(null)
   const [myLists, setMyLists] = useState<ListItem[]>([])
+  const [dailyRecommendationPlace, setDailyRecommendationPlace] = useState<DailyPlace | null>(null);
+  const [isFetchingRecommendation, setIsFetchingRecommendation] = useState(true);
 
   // Mock data - in a real app, this would come from your database
   const recommendedLists: ListItem[] = [
@@ -99,6 +110,35 @@ export default function HomePage() {
     }
   }, [user])
 
+  // Fetch daily recommendation
+  useEffect(() => {
+    const fetchRandomPlace = async () => {
+      setIsFetchingRecommendation(true);
+      try {
+        // Call the SQL function created in Supabase
+        const { data, error } = await supabase.rpc('get_random_place');
+
+        if (error) {
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          // Add an empty description for now
+          setDailyRecommendationPlace({ ...data[0], description: "" });
+        } else {
+          setDailyRecommendationPlace(null); // Handle case where no place is returned
+        }
+      } catch (error) {
+        console.error("Error fetching random place:", error);
+        setDailyRecommendationPlace(null);
+      } finally {
+        setIsFetchingRecommendation(false);
+      }
+    };
+
+    fetchRandomPlace();
+  }, []); // Empty dependency array ensures this runs once on mount
+
   const mapContainerStyle = { width: "100%", height: "100%" }
   const mapCenter = { lat: 40.74, lng: -73.98 } // Center of NYC
   const mapOptions = {
@@ -128,34 +168,12 @@ export default function HomePage() {
     )
   }
 
-  // --- Define Weekly Recommendations ---
-  const weeklyRecommendations: RecommendedPlace[] = [
-    {
-      id: "rec-1",
-      name: "Museum of Modern Art (MoMA)",
-      location: { lat: 40.7614, lng: -73.9776 },
-      description: "Iconic museum featuring modern and contemporary art.",
-    },
-    {
-      id: "rec-2",
-      name: "Brooklyn Bridge Park",
-      location: { lat: 40.702, lng: -73.9953 },
-      description: "Waterfront park with stunning Manhattan skyline views.",
-    },
-    {
-      id: "rec-3",
-      name: "Comedy Cellar",
-      location: { lat: 40.7302, lng: -74.0005 },
-      description: "Legendary basement comedy club.",
-    },
-  ]
-
   // Logged-in view:
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900">Gotham Guide</h1>
+          <h1 className="text-2xl font-bold text-teal-900">Gotham Guide</h1>
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => router.push("/profile")} className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
@@ -175,7 +193,11 @@ export default function HomePage() {
         {/* Left Column: Map with Today's Recommendation */}
         <div className="w-full md:w-1/2 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-800">Today's Recommendation</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Today's Recommendation
+              {isFetchingRecommendation && <span className="text-sm font-normal text-gray-500 ml-2">(Loading...)</span>}
+              {!isFetchingRecommendation && !dailyRecommendationPlace && <span className="text-sm font-normal text-gray-500 ml-2">(Unavailable)</span>}
+            </h2>
           </div>
 
           <div className="relative flex-1 overflow-hidden">
@@ -204,17 +226,22 @@ export default function HomePage() {
                   options={mapOptions}
                   onLoad={onMapLoad}
                 >
-                  {/* Render Markers for recommended places */}
-                  {weeklyRecommendations.map((place) => (
+                  {/* Render Marker for the fetched recommended place */}
+                  {dailyRecommendationPlace && (
                     <Marker
-                      key={`rec-marker-${place.id}`}
-                      position={place.location}
+                      key={`rec-marker-${dailyRecommendationPlace.id}`}
+                      position={{ lat: dailyRecommendationPlace.lat, lng: dailyRecommendationPlace.long }} // Use lat/long from fetched data
                       onClick={() => {
-                        setSelectedMarker(place)
+                        // Adapt the selected marker state if needed, or create a compatible object
+                        setSelectedMarker({
+                          id: dailyRecommendationPlace.id,
+                          name: dailyRecommendationPlace.name,
+                          location: { lat: dailyRecommendationPlace.lat, lng: dailyRecommendationPlace.long },
+                          description: dailyRecommendationPlace.description || ""
+                        });
                       }}
-                      title={place.name}
                     />
-                  ))}
+                  )}
 
                   {/* InfoWindow for selected recommended place */}
                   {selectedMarker && (
@@ -238,20 +265,26 @@ export default function HomePage() {
           </div>
 
           {/* Featured place card that overlays the bottom of the map */}
-          <Card className="bg-white shadow-lg -mt-16 ml-8 z-10 max-w-md">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="bg-emerald-100 p-2 rounded-lg">
-                  <MapPin className="h-5 w-5 text-emerald-600" />
+          {dailyRecommendationPlace && !isFetchingRecommendation && (
+            <Card className="bg-white shadow-lg -mt-16 ml-8 z-10 max-w-md">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="bg-emerald-100 p-2 rounded-lg">
+                    <MapPin className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">Featured: {dailyRecommendationPlace.name}</h3>
+                    {/* Display description if available, otherwise maybe address or nothing */}
+                    {dailyRecommendationPlace.description && (
+                      <p className="text-sm text-gray-500 mt-1">{dailyRecommendationPlace.description}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Featured: {weeklyRecommendations[0].name}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{weeklyRecommendations[0].description}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
+
 
         {/* Right Column: Lists */}
         <div className="w-full md:w-1/2 flex flex-col gap-6 overflow-hidden">
@@ -299,7 +332,7 @@ export default function HomePage() {
               </Button>
             </div>
 
-            <ScrollArea className="h-[160px] rounded-lg border bg-white p-4">
+            <ScrollArea className="h-[190px] rounded-lg border bg-white p-4">
               {myLists.length > 0 ? (
                 <div className="flex flex-col gap-3">
                   {myLists.map((list) => (
@@ -339,7 +372,7 @@ export default function HomePage() {
 
           {/* Quick Actions */}
           <div className="flex gap-3 mt-auto">
-            <Link href="/map" className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
+            <Link href="/map" className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-teal-900 text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2">
               Explore Full Map
             </Link>
             
