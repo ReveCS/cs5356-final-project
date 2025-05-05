@@ -219,8 +219,6 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-800">
               Today&apos;s Recommendation
-              {isFetchingRecommendation && <span className="text-sm font-normal text-gray-500 ml-2">(Loading...)</span>}
-              {!isFetchingRecommendation && !dailyRecommendationPlace && <span className="text-sm font-normal text-gray-500 ml-2">(Unavailable)</span>}
             </h2>
           </div>
 
