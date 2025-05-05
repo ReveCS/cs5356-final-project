@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation"
 import Link from 'next/link';
 import { useAuth } from "@/components/AuthContext"
 import { GoogleMap, useLoadScript, Marker, InfoWindow } from "@react-google-maps/api"
-import { PlusCircle, MapPin, List, Star, ChevronRight } from "lucide-react"
+import { List, ChevronRight } from "lucide-react" // Removed PlusCircle, MapPin, Star
 import { supabase } from "@/lib/supabase" // Import supabase client
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Suspense } from 'react';
+import { Avatar, AvatarFallback } from "@/components/ui/avatar" // Removed AvatarImage
 import dynamic from 'next/dynamic';
 
 // Dynamically import MyLists with no SSR
@@ -51,12 +50,6 @@ interface DailyPlace {
   place_id: string;
 }
 
-// Interface for storing the recommendation in localStorage
-interface StoredRecommendation {
-  place: DailyPlace;
-  fetchDate: string; // YYYY-MM-DD format
-}
-
 // Memoize recommended lists to prevent recreation
 const RECOMMENDED_LISTS: ListItem[] = [
   {
@@ -94,11 +87,6 @@ const RECOMMENDED_LISTS: ListItem[] = [
 export default function HomePage() {
   const { user, loading, firstName, signOut } = useAuth()
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Redirect unauthenticated users to /auth/signin
   useEffect(() => {
@@ -144,59 +132,35 @@ export default function HomePage() {
 
   // Fetch daily recommendation
   useEffect(() => {
-    if (!mounted || !user) return;
-  
-    const today = new Date().toISOString().split('T')[0]; // Get date in YYYY-MM-DD format
-    const storageKey = `dailyRecommendation_${user.id}`; // User-specific key
-  
+    if (!user) return; // Don't fetch if no user yet
+
     const fetchRandomPlace = async () => {
       setIsFetchingRecommendation(true);
       try {
         const { data, error } = await supabase.rpc('get_random_place');
-  
+
         if (error) {
           console.error("Error fetching random place:", error);
           throw error;
         }
-  
+
         if (data && data.length > 0) {
-          const newPlace: DailyPlace = { ...data[0], description: "" };
-          setDailyRecommendationPlace(newPlace);
-          // Store the new recommendation and today's date
-          const recommendationToStore: StoredRecommendation = {
-            place: newPlace,
-            fetchDate: today,
-          };
-          localStorage.setItem(storageKey, JSON.stringify(recommendationToStore));
+          setDailyRecommendationPlace({ ...data[0], description: "" });
         } else {
           setDailyRecommendationPlace(null);
-          localStorage.removeItem(storageKey); // Remove if fetch returns nothing
         }
       } catch (error) {
         console.error("Error fetching random place:", error);
         setDailyRecommendationPlace(null);
-        // Optionally clear storage on error too, or leave stale data?
-        // localStorage.removeItem(storageKey); 
       } finally {
         setIsFetchingRecommendation(false);
       }
     };
-  
-    // Check localStorage first
-    const storedData = localStorage.getItem(storageKey);
-    if (storedData) {
-      const parsedData: StoredRecommendation = JSON.parse(storedData);
-      if (parsedData.fetchDate === today && parsedData.place) {
-        setDailyRecommendationPlace(parsedData.place);
-        setIsFetchingRecommendation(false);
-        return; // Found valid data for today, no need to fetch
-      }
-    }
-    // If no valid data in localStorage for today, fetch a new one
-    fetchRandomPlace();
-  }, [mounted, user]);
 
-  const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
+    fetchRandomPlace();
+  }, [user]); // Depend only on user object
+
+  const onMapLoad = useCallback((_mapInstance: google.maps.Map) => { // Prefix unused variable with _
     // Optional: mapInstance.setOptions({ maxZoom: 15 });
   }, []);
 
@@ -205,7 +169,7 @@ export default function HomePage() {
     router.replace("/auth/signin");
   };
 
-  if (!mounted || loading) {
+  if (loading) { // Rely solely on AuthContext loading state for initial load
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -327,7 +291,7 @@ export default function HomePage() {
           {/* Daily Recommendation */}
           <div className="absolute bottom-4 left-16 max-w-md z-10">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-[1.02]">
-              <div className="p-4">
+              <div className="p-4"> 
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -338,7 +302,7 @@ export default function HomePage() {
                 </div>
                 {dailyRecommendationPlace ? (
                   <div className="space-y-2.5">
-                    <h4 className="text-base font-medium text-gray-900 truncate">{dailyRecommendationPlace.name}</h4>
+                    <h4 className="text-base font-medium text-gray-900 truncate">{dailyRecommendationPlace.name}</h4> 
                     {dailyRecommendationPlace.description && (
                       <p className="text-sm text-gray-500 line-clamp-2">{dailyRecommendationPlace.description}</p>
                     )}
@@ -355,7 +319,7 @@ export default function HomePage() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">Loading recommendation...</p>
+                  <p className="text-sm text-gray-500">Loading recommendation...</p> 
                 )}
               </div>
             </div>

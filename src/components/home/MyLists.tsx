@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ElementType } from 'react';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Place } from '@/types/place';
-import Link from 'next/link';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, List, Star, Plus } from "lucide-react";
+import { List, Star, Plus } from "lucide-react";
 
 export default function MyLists() {
   const { user } = useAuth();
@@ -104,7 +103,7 @@ export default function MyLists() {
     emptyMessage 
   }: { 
     title: string; 
-    icon: any; 
+    icon: ElementType;
     places: Place[]; 
     emptyMessage: string;
   }) => (

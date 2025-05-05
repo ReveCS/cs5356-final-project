@@ -21,7 +21,7 @@ export default function SignUpForm() {
     setLoading(true);
 
     try {
-      const { data, error: signUpError } = await signUp(email, password, firstName, lastName);
+      const { data: _data, error: signUpError } = await signUp(email, password, firstName, lastName); // Prefix unused 'data' with _
 
       if (signUpError) {
         setError(signUpError.message);
@@ -30,7 +30,7 @@ export default function SignUpForm() {
 
       // Success! Redirect to home
       router.push('/');
-    } catch (err) {
+    } catch (_err) { // Variable already prefixed, no change needed here
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);

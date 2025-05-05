@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useLoadScript } from '@react-google-maps/api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthContext';
@@ -178,6 +179,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
       }
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     checkPlaceStatus();
   }, [user, place.place_id]);
 
@@ -226,7 +228,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
 
     try {
       // First check if the record exists
-      const { data: existingData, error: fetchError } = await supabase
+      const { data: existingData, error: _fetchError } = await supabase
         .from('want_to_try_places')
         .select('places')
         .eq('user_id', user.id)
@@ -289,7 +291,7 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
 
     try {
       // First check if the record exists
-      const { data: existingData, error: fetchError } = await supabase
+      const { data: existingData, error: _fetchError } = await supabase
         .from('saved_places')
         .select('places')
         .eq('user_id', user.id)
@@ -404,11 +406,13 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
         <div className="relative w-full h-64">
           {photoUrl ? (
             <div className="relative w-full h-full group">
-              <img
+              <Image
                 src={photoUrl}
                 alt={`${place.name}`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
+                fill // Use fill to cover the parent div
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Adjust sizes as needed
+                style={{ objectFit: 'cover' }} // Equivalent to object-cover class
+                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                   console.error('Error loading image:', e);
                   console.log('Failed image URL:', photoUrl);
                   // Optionally set to null to show placeholder on error

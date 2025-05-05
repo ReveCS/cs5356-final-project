@@ -34,7 +34,7 @@ export default function SignInForm() {
 
       // Redirect to home page
       router.replace('/');
-    } catch (err) {
+    } catch (_err) { // Prefix unused variable with _
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
