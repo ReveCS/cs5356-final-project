@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from 'next/link';
 import { useAuth } from "@/components/AuthContext"
@@ -11,6 +11,21 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+// Dynamically import MyLists with no SSR
+const MyLists = dynamic(() => import('@/components/home/MyLists'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-900"></div>
+    </div>
+  )
+});
+
+// Define libraries outside component to prevent recreation
+const GOOGLE_MAPS_LIBRARIES: ("places")[] = ["places"];
 
 interface RecommendedPlace {
   id: string
@@ -33,10 +48,51 @@ interface DailyPlace {
   lat: number;
   long: number; // Matches Supabase table column
   description?: string; // Optional description
+  place_id: string;
 }
+
+// Memoize recommended lists to prevent recreation
+const RECOMMENDED_LISTS: ListItem[] = [
+  {
+    id: "list-1",
+    title: "Best Coffee Shops",
+    places: 8,
+    author: "Emma",
+  },
+  {
+    id: "list-2",
+    title: "Hidden Gems in Brooklyn",
+    places: 12,
+    author: "Marcus",
+  },
+  {
+    id: "list-3",
+    title: "Rooftop Bars",
+    places: 6,
+    author: "Sophia",
+  },
+  {
+    id: "list-4",
+    title: "Art Galleries",
+    places: 9,
+    author: "Jackson",
+  },
+  {
+    id: "list-5",
+    title: "Historic Landmarks",
+    places: 15,
+    author: "Olivia",
+  },
+];
+
 export default function HomePage() {
-  const { user, loading, firstName } = useAuth()
+  const { user, loading, firstName, signOut } = useAuth()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Redirect unauthenticated users to /auth/signin
   useEffect(() => {
@@ -47,101 +103,15 @@ export default function HomePage() {
 
   const { isLoaded: isMapLoaded, loadError: mapLoadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   })
 
   const [selectedMarker, setSelectedMarker] = useState<RecommendedPlace | null>(null)
-  const [myLists, setMyLists] = useState<ListItem[]>([])
   const [dailyRecommendationPlace, setDailyRecommendationPlace] = useState<DailyPlace | null>(null);
   const [isFetchingRecommendation, setIsFetchingRecommendation] = useState(true);
 
-  // Mock data - in a real app, this would come from your database
-  const recommendedLists: ListItem[] = [
-    {
-      id: "list-1",
-      title: "Best Coffee Shops",
-      places: 8,
-      author: "Emma",
-    },
-    {
-      id: "list-2",
-      title: "Hidden Gems in Brooklyn",
-      places: 12,
-      author: "Marcus",
-    },
-    {
-      id: "list-3",
-      title: "Rooftop Bars",
-      places: 6,
-      author: "Sophia",
-    },
-    {
-      id: "list-4",
-      title: "Art Galleries",
-      places: 9,
-      author: "Jackson",
-    },
-    {
-      id: "list-5",
-      title: "Historic Landmarks",
-      places: 15,
-      author: "Olivia",
-    },
-  ]
-
-  // Simulating fetching user's lists - in a real app, fetch from your database
-  useEffect(() => {
-    // Mock API call - replace with actual data fetching
-    const fetchMyLists = async () => {
-      // Simulating empty lists for demonstration
-      setMyLists([])
-
-      // Uncomment to simulate having lists
-      /*
-      setMyLists([
-        { id: 'my-list-1', title: 'My Favorite Restaurants', places: 5, author: 'You' },
-        { id: 'my-list-2', title: 'Weekend Plans', places: 3, author: 'You' },
-      ]);
-      */
-    }
-
-    if (user) {
-      fetchMyLists()
-    }
-  }, [user])
-
-  // Fetch daily recommendation
-  useEffect(() => {
-    const fetchRandomPlace = async () => {
-      setIsFetchingRecommendation(true);
-      try {
-        // Call the SQL function created in Supabase
-        const { data, error } = await supabase.rpc('get_random_place');
-
-        if (error) {
-          throw error;
-        }
-
-        if (data && data.length > 0) {
-          // Add an empty description for now
-          setDailyRecommendationPlace({ ...data[0], description: "" });
-        } else {
-          setDailyRecommendationPlace(null); // Handle case where no place is returned
-        }
-      } catch (error) {
-        console.error("Error fetching random place:", error);
-        setDailyRecommendationPlace(null);
-      } finally {
-        setIsFetchingRecommendation(false);
-      }
-    };
-
-    fetchRandomPlace();
-  }, []); // Empty dependency array ensures this runs once on mount
-
-  const mapContainerStyle = { width: "100%", height: "100%" }
-  const mapCenter = { lat: 40.74, lng: -73.98 } // Center of NYC
-  const mapOptions = {
+  // Memoize map options to prevent recreation
+  const mapOptions = useMemo(() => ({
     disableDefaultUI: true,
     zoomControl: true,
     scrollwheel: false,
@@ -154,18 +124,70 @@ export default function HomePage() {
       { featureType: "road", elementType: "labels", stylers: [{ visibility: "simplified" }] },
       { featureType: "transit", stylers: [{ visibility: "simplified" }] },
     ],
-  }
+  }), []);
+
+  const mapContainerStyle = useMemo(() => ({ 
+    width: "100%", 
+    height: "100%" 
+  }), []);
+
+  const mapCenter = useMemo(() => ({ 
+    lat: 40.74, 
+    lng: -73.98 
+  }), []);
+
+  // Fetch daily recommendation
+  useEffect(() => {
+    if (!mounted || !user) return;
+
+    const fetchRandomPlace = async () => {
+      setIsFetchingRecommendation(true);
+      try {
+        const { data, error } = await supabase.rpc('get_random_place');
+
+        if (error) {
+          console.error("Error fetching random place:", error);
+          throw error;
+        }
+
+        if (data && data.length > 0) {
+          setDailyRecommendationPlace({ ...data[0], description: "" });
+        } else {
+          setDailyRecommendationPlace(null);
+        }
+      } catch (error) {
+        console.error("Error fetching random place:", error);
+        setDailyRecommendationPlace(null);
+      } finally {
+        setIsFetchingRecommendation(false);
+      }
+    };
+
+    fetchRandomPlace();
+  }, [mounted, user]);
 
   const onMapLoad = useCallback((mapInstance: google.maps.Map) => {
     // Optional: mapInstance.setOptions({ maxZoom: 15 });
-  }, [])
+  }, []);
 
-  if (loading && !user) {
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/auth/signin");
+  };
+
+  if (!mounted || loading) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <p>Loading…</p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-900"></div>
+          <p className="text-gray-600">Loading your experience...</p>
+        </div>
       </div>
     )
+  }
+
+  if (!user) {
+    return null;
   }
 
   // Logged-in view:
@@ -175,14 +197,22 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-teal-900">Gotham Guide</h1>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.push("/profile")} className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-                {/* <AvatarImage src={user?.avatar_url || "/placeholder.svg?height=32&width=32"} alt={firstName || "User"} /> */}
+            <Button 
+              variant="ghost" 
+              onClick={() => router.push(`/profile/${user.id}`)} 
+              className="flex items-center gap-2 hover:bg-gray-100 transition-colors"
+            >
+              <Avatar className="h-8 w-8">
                 <AvatarFallback>{firstName?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
               </Avatar>
               <span className="hidden md:inline">{firstName || user?.email || "User"}</span>
             </Button>
-            <Button variant="outline" onClick={() => router.replace("/auth/signin")} size="sm">
+            <Button 
+              variant="outline" 
+              onClick={handleSignOut} 
+              size="sm"
+              className="hover:bg-gray-100 transition-colors"
+            >
               Sign Out
             </Button>
           </div>
@@ -205,7 +235,7 @@ export default function HomePage() {
             <div
               className="absolute inset-0 rounded-3xl overflow-hidden"
               style={{
-                clipPath: "polygon(0% 0%, 100% 0%, 100% 85%, 85% 100%, 0% 100%)",
+                clipPath: "polygon(0% 0%, 100% 0%, 100% 90%, 90% 100%, 0% 100%)",
                 boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
               }}
             >
@@ -264,25 +294,42 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Featured place card that overlays the bottom of the map */}
-          {dailyRecommendationPlace && !isFetchingRecommendation && (
-            <Card className="bg-white shadow-lg -mt-16 ml-8 z-10 max-w-md">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="bg-emerald-100 p-2 rounded-lg">
-                    <MapPin className="h-5 w-5 text-emerald-600" />
+          {/* Daily Recommendation */}
+          <div className="absolute bottom-4 left-16 max-w-md z-10">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-[1.02]">
+              <div className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">Featured: {dailyRecommendationPlace.name}</h3>
-                    {/* Display description if available, otherwise maybe address or nothing */}
-                    {dailyRecommendationPlace.description && (
-                      <p className="text-sm text-gray-500 mt-1">{dailyRecommendationPlace.description}</p>
-                    )}
-                  </div>
+                  <h3 className="text-base font-semibold text-gray-900">Daily Recommendation</h3>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+                {dailyRecommendationPlace ? (
+                  <div className="space-y-2.5">
+                    <h4 className="text-base font-medium text-gray-900 truncate">{dailyRecommendationPlace.name}</h4>
+                    {dailyRecommendationPlace.description && (
+                      <p className="text-sm text-gray-500 line-clamp-2">{dailyRecommendationPlace.description}</p>
+                    )}
+                    <div className="flex items-center justify-between pt-2">
+                      <Link
+                        href={`/map?place=${dailyRecommendationPlace.place_id}`}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5"
+                      >
+                        View on Map Explorer
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Loading recommendation...</p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
 
@@ -299,7 +346,7 @@ export default function HomePage() {
 
             <ScrollArea className="w-148 whitespace-nowrap rounded-md">
               <div className="flex w-max space-x-4 p-4">
-                {recommendedLists.map((list) => (
+                {RECOMMENDED_LISTS.map((list) => (
                   <Card key={list.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <CardContent className="p-3 flex items-center gap-3">
                       <div className="bg-orange-100 p-2 rounded-md">
@@ -324,50 +371,14 @@ export default function HomePage() {
           </div>
 
           {/* My Lists Section */}
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 flex-1 min-h-0">
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-800">My Lists</h2>
-              <Button variant="ghost" size="sm" className="text-sm flex items-center gap-1">
-                View all <ChevronRight className="h-4 w-4" />
-              </Button>
             </div>
 
-            <ScrollArea className="h-[190px] rounded-lg border bg-white p-4">
-              {myLists.length > 0 ? (
-                <div className="flex flex-col gap-3">
-                  {myLists.map((list) => (
-                    <Card key={list.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
-                      <CardContent className="p-3 flex items-center gap-3">
-                        <div className="bg-blue-100 p-2 rounded-lg">
-                          <Star className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{list.title}</h3>
-                          <p className="text-sm text-gray-500">{list.places} places</p>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center gap-3 p-6">
-                  <div className="bg-gray-100 p-3 rounded-full">
-                    <PlusCircle className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <h3 className="font-medium text-gray-700">No lists yet</h3>
-                  <p className="text-sm text-gray-500 text-center">
-                    Create your first list to start organizing your favorite places
-                  </p>
-                  <Button className="mt-2">
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Create New List
-                  </Button>
-                </div>
-              )}
-            </ScrollArea>
+            <div className="flex-1 overflow-hidden">
+              <MyLists />
+            </div>
           </div>
 
           {/* Quick Actions */}

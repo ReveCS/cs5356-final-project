@@ -8,15 +8,21 @@ import debounce from 'lodash/debounce';
 import PlaceCard from './PlaceCard';
 import NavigationBar from './NavigationBar';
 import ListComponent from './ListComponent';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Place {
   id: string;
   name: string;
-  address: string;
-  lat: number;
-  long: number;
-  category: string;
-  place_id: string;
+  description?: string;
+  location?: {
+    lat: number;
+    lng: number;
+  };
+  address?: string;
+  category?: string;
+  place_id?: string;
+  lat?: number;
+  long?: number;
 }
 
 const mapContainerStyle = {
@@ -42,6 +48,8 @@ const options = {
 };
 
 export default function MapExplorer() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: ['places']
@@ -54,6 +62,35 @@ export default function MapExplorer() {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedMarker, setSelectedMarker] = useState<Place | null>(null);
   const [isListOpen, setIsListOpen] = useState(false);
+
+  // Check for place ID in URL on mount
+  useEffect(() => {
+    const placeId = searchParams.get('place');
+    if (placeId) {
+      const fetchPlace = async () => {
+        const { data, error } = await supabase
+          .from('places')
+          .select('*')
+          .eq('place_id', placeId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching place:', error);
+          return;
+        }
+
+        if (data && data.lat && data.long && data.place_id) {
+          setSelectedPlace(data);
+          if (map) {
+            map.panTo({ lat: data.lat, lng: data.long });
+            map.setZoom(15);
+          }
+        }
+      };
+
+      fetchPlace();
+    }
+  }, [searchParams]);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     setMap(map);
@@ -97,6 +134,10 @@ export default function MapExplorer() {
   };
 
   const handlePlaceSelect = (place: Place) => {
+    if (!place.lat || !place.long || !place.place_id) {
+      console.error('Place is missing required properties');
+      return;
+    }
     setSelectedPlace(place);
     setSelectedMarker(place);
     if (map) {
@@ -105,6 +146,11 @@ export default function MapExplorer() {
     }
     setSearchResults([]);
     setSearchQuery(place.name);
+    
+    // Update URL with place ID
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('place', place.place_id);
+    router.push(`/map?${params.toString()}`);
   };
 
   const getMarkerIcon = (category: string) => {
@@ -209,23 +255,26 @@ export default function MapExplorer() {
         options={options}
         onLoad={onMapLoad}
       >
-        {searchResults.map((place) => (
-          <Marker
-            key={place.id}
-            position={{ lat: place.lat, lng: place.long }}
-            icon={{
-              url: getMarkerIcon(place.category),
-              scaledSize: new google.maps.Size(32, 32)
-            }}
-            onClick={() => handlePlaceSelect(place)}
-          />
-        ))}
+        {searchResults.map((place) => {
+          if (!place.lat || !place.long || !place.place_id) return null;
+          return (
+            <Marker
+              key={place.id}
+              position={{ lat: place.lat, lng: place.long }}
+              icon={{
+                url: getMarkerIcon(place.category),
+                scaledSize: new google.maps.Size(32, 32)
+              }}
+              onClick={() => handlePlaceSelect(place)}
+            />
+          );
+        })}
 
-        {selectedMarker && (
+        {selectedMarker && selectedMarker.lat && selectedMarker.long && selectedMarker.place_id && (
           <Marker
             position={{ lat: selectedMarker.lat, lng: selectedMarker.long }}
             icon={{
-              url: getMarkerIcon(selectedMarker.category),
+              url: selectedMarker.category ? getMarkerIcon(selectedMarker.category) : 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
               scaledSize: new google.maps.Size(40, 40)
             }}
             animation={google.maps.Animation.BOUNCE}

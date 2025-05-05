@@ -35,111 +35,138 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1) On mount, fetch existing session
-    let isMounted = true;
+    let mounted = true;
 
-    const fetchSessionAndProfile = async () => {
-      setLoading(true);
-      const { data: { session }, error } = await supabase.auth.getSession();
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
 
-      if (isMounted) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchProfile(session.user.id);
-          setLoading(false);
-        } else {
-          setFirstName(null); 
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        if (mounted) {
           setLoading(false);
         }
       }
     };
 
-    fetchSessionAndProfile();
+    initializeAuth();
 
-    // 2) Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {        
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        if (newSession?.user) {
-          await fetchProfile(newSession.user.id);
-          setLoading(false);
-        } else {
-          setFirstName(null);
-          setLoading(false);
-        }
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+      } else {
+        setFirstName(null);
       }
-    );
+      setLoading(false);
+    });
+
     return () => {
-      listener.subscription.unsubscribe();
+      mounted = false;
+      subscription.unsubscribe();
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data: data.session, error };
-  };
-
-  const signUp = async (
-    email: string,
-    password: string,
-    firstName: string, 
-    lastName: string  
-  ) => {
-    // 1️⃣ Create the auth user
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    // 2️⃣ If signup succeeded and we got a user back, seed the profiles table
-    if (!error && data.user) {
-      const userId = data.user.id;
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          role: 'user',         
-          first_name: firstName, 
-          last_name: lastName,
-          avatar_url: null,    
-        });
-
-      if (profileError) {
-        console.error('Error creating profile row:', profileError);
-        console.log('Error creating profile row:', profileError);
-      }
-    }
-
-    // 3️⃣ Return the original signup result so your UI can handle session or error
-    return { data: data.session, error };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  // Helper function to fetch profile
   const fetchProfile = async (userId: string) => {
-    const { data: profileData, error: profileError } = await supabase
-      .from('profiles')
-      .select('first_name')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('id', userId)
+        .single();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        setFirstName(null); 
+        setFirstName(null);
       } else if (profileData) {
         setFirstName(profileData.first_name);
       } else {
         setFirstName(null);
       }
-  }
+    } catch (err) {
+      console.error('Error in fetchProfile:', err);
+      setFirstName(null);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { data: data.session, error };
+    } catch (err) {
+      console.error('Error in signIn:', err);
+      return { data: null, error: err as AuthError };
+    }
+  };
+
+  const signUp = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { data: null, error };
+      }
+
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            role: 'user',
+            first_name: firstName,
+            last_name: lastName,
+            avatar_url: null,
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+        }
+      }
+
+      return { data: data.session, error: null };
+    } catch (err) {
+      console.error('Error in signUp:', err);
+      return { data: null, error: err as AuthError };
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setFirstName(null);
+    } catch (err) {
+      console.error('Error in signOut:', err);
+      throw err;
+    }
+  };
 
   const value = {
     user,
