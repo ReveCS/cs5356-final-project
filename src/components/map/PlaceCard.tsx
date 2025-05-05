@@ -71,7 +71,8 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
         const service = new google.maps.places.PlacesService(map);
 
         const request: google.maps.places.PlaceDetailsRequest = {
-          placeId: place.place_id,
+          // Assert non-null because parent component ensures place_id exists
+          placeId: place.place_id!,
           fields: [
             'name',
             'formatted_address',
