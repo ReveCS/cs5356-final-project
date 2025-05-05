@@ -45,7 +45,7 @@ export default function PlacesList({
                   className="w-full text-left px-4 py-3 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out text-gray-700"
                   onMouseDown={() => onPlaceSelect(place)}
                 >
-                  <div className="font-medium">{place?.name}</div>
+                  <div className="font-medium">{place.name!}</div>
                   {place.address && (
                     <div className="text-sm text-gray-500">{place.address}</div>
                   )}
