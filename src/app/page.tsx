@@ -102,7 +102,6 @@ export default function HomePage() {
 
   const [selectedMarker, setSelectedMarker] = useState<RecommendedPlace | null>(null)
   const [dailyRecommendationPlace, setDailyRecommendationPlace] = useState<DailyPlace | null>(null);
-  const [isFetchingRecommendation, setIsFetchingRecommendation] = useState(true);
 
   // Memoize map options to prevent recreation
   const mapOptions = useMemo(() => ({
@@ -135,7 +134,6 @@ export default function HomePage() {
     if (!user) return; // Don't fetch if no user yet
 
     const fetchRandomPlace = async () => {
-      setIsFetchingRecommendation(true);
       try {
         const { data, error } = await supabase.rpc('get_random_place');
 
@@ -152,8 +150,6 @@ export default function HomePage() {
       } catch (error) {
         console.error("Error fetching random place:", error);
         setDailyRecommendationPlace(null);
-      } finally {
-        setIsFetchingRecommendation(false);
       }
     };
 
