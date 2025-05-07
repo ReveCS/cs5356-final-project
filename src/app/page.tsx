@@ -50,6 +50,11 @@ interface DailyPlace {
   place_id: string;
 }
 
+interface StoredRecommendation {
+  place: DailyPlace;
+  fetchDate: string; // YYYY-MM-DD format
+}
+
 // Memoize recommended lists to prevent recreation
 const RECOMMENDED_LISTS: ListItem[] = [
   {
@@ -87,6 +92,11 @@ const RECOMMENDED_LISTS: ListItem[] = [
 export default function HomePage() {
   const { user, loading, firstName, signOut } = useAuth()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Redirect unauthenticated users to /auth/signin
   useEffect(() => {
@@ -131,7 +141,10 @@ export default function HomePage() {
 
   // Fetch daily recommendation
   useEffect(() => {
-    if (!user) return; // Don't fetch if no user yet
+    if (!mounted || !user) return;
+
+    const today = new Date().toISOString().split('T')[0]; // Get date in YYYY-MM-DD format
+    const storageKey = `dailyRecommendation_${user.id}`; // User-specific key
 
     const fetchRandomPlace = async () => {
       try {
@@ -143,9 +156,17 @@ export default function HomePage() {
         }
 
         if (data && data.length > 0) {
-          setDailyRecommendationPlace({ ...data[0], description: "" });
+          const newPlace: DailyPlace = { ...data[0], description: "" };
+          setDailyRecommendationPlace(newPlace);
+          // Store the new recommendation and today's date
+          const recommendationToStore: StoredRecommendation = {
+            place: newPlace,
+            fetchDate: today,
+          };
+          localStorage.setItem(storageKey, JSON.stringify(recommendationToStore));
         } else {
           setDailyRecommendationPlace(null);
+          localStorage.removeItem(storageKey);
         }
       } catch (error) {
         console.error("Error fetching random place:", error);
@@ -153,8 +174,18 @@ export default function HomePage() {
       }
     };
 
+    const storedData = localStorage.getItem(storageKey);
+    if (storedData) {
+      const parsedData: StoredRecommendation = JSON.parse(storedData);
+      if (parsedData.fetchDate === today && parsedData.place) {
+        setDailyRecommendationPlace(parsedData.place);
+        return; 
+      }
+    }
+
     fetchRandomPlace();
-  }, [user]); // Depend only on user object
+  }, [mounted, user]);
+
 
   const onMapLoad = useCallback(() => {
 

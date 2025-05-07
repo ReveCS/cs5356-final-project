@@ -68,7 +68,7 @@ export default function SignInForm() {
       {error && <p className="text-red-600 mb-2">{error}</p>}
       <button
         type="submit"
-        className="w-full bg-black text-white py-2 rounded transition-colors hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
+        className="w-full bg-teal-900 text-white py-2 rounded transition-colors hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
         disabled={isLoading}
       >
         {isLoading ? 'Signing in...' : 'Sign In'}

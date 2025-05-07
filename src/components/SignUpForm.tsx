@@ -90,7 +90,7 @@ export default function SignUpForm() {
 
       <button
         type="submit"
-        className="w-full bg-black text-white py-2 rounded transition-colors hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
+        className="w-full bg-teal-900 text-white py-2 rounded transition-colors hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
         disabled={isLoading}
       >
         {isLoading ? 'Creating account...' : 'Create Account'}

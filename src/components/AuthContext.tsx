@@ -29,6 +29,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  console.log('AuthProvider rendering/re-rendering');
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [firstName, setFirstName] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    console.log('AuthProvider useEffect mounting');
 
     // Get initial session
     const initializeAuth = async () => {
@@ -78,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      console.log('AuthProvider useEffect unmounting/cleaning up');
       subscription.unsubscribe();
     };
   }, []);
