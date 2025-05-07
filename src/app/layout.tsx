@@ -10,18 +10,22 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'NYC Entertainment List Keeper',
+  title: 'Gotham Guide',
   description: 'Keep track of your favorite NYC entertainment spots',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans min-h-screen bg-gray-50`}>
+      <body className={inter.className}>
         <AuthProvider>
           {children}
         </AuthProvider>
       </body>
     </html>
-  );
+  )
 }
