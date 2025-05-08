@@ -85,21 +85,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) {
+        console.log('AuthProvider: onAuthStateChange - component unmounted, ignoring event.');
+        return;
+      }
 
       setSession(session);
       setUser(session?.user ?? null);
       console.log('AuthProvider: onAuthStateChange - user set to:', session?.user ?? null);
+
       if (session?.user) {
-        console.log('AuthProvider: onAuthStateChange - user found, fetching profile for', session.user.id);
-        await fetchProfile(session.user.id);
-        console.log('AuthProvider: onAuthStateChange - profile fetched.');
+        const userId = session.user.id;
+        console.log('AuthProvider: onAuthStateChange - user found, scheduling profile fetch for', userId);
+        setTimeout(async () => {
+          if (!mounted) { 
+            console.log('AuthProvider: onAuthStateChange (setTimeout) - component unmounted before profile fetch for', userId);
+            return;
+          }
+          console.log('AuthProvider: onAuthStateChange (setTimeout) - fetching profile for', userId);
+          await fetchProfile(userId);
+          console.log('AuthProvider: onAuthStateChange (setTimeout) - profile fetched for', userId);
+        }, 0);
       } else {
         console.log('AuthProvider: onAuthStateChange - no user session, setting firstName to null.');
         setFirstName(null);
       }
-      console.log('AuthProvider: onAuthStateChange - setting loading to false.');
       setLoading(false);
     });
 
