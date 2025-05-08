@@ -24,7 +24,6 @@ interface PlaceListProps {
 export default function PlaceList({ wantToTryPlaces, savedPlaces, isLoading, error, onPlacesUpdate, isOwnProfile }: PlaceListProps) {
   const [activeTab, setActiveTab] = useState<TabType>('want-to-try');
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const pathname = usePathname();
   const { user } = useAuth();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [placesWithDetails, setPlacesWithDetails] = useState<Place[]>([]);
