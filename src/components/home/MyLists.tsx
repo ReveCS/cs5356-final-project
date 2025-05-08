@@ -22,39 +22,57 @@ export default function MyLists() {
     const fetchPlaces = async () => {
       setIsLoading(true);
       setError(null);
-      
+
+      let fetchedWantToTry: Place[] = [];
+      let fetchedSavedPlaces: Place[] = [];
+      let encounteredError: string | null = null;
+
       try {
         // Fetch Want to Try places
-        const { data: wantData, error: wantError } = await supabase
+        const { data: wantToTryRows, error: wantError } = await supabase
           .from('want_to_try_places')
           .select('places')
           .eq('user_id', user.id)
-          .single();
+          .limit(1); // Use limit(1) instead of single()
 
-        if (wantError && wantError.code !== 'PGRST116') {
+        if (wantError) {
           console.error('Error fetching want_to_try_places:', wantError);
-          setError('Failed to load your Want to Try list.');
-        } else if (wantData?.places) {
-          setWantToTryPlaces(Array.isArray(wantData.places) ? wantData.places : []);
+          encounteredError = 'Failed to load your Want to Try list.';
+        } else if (wantToTryRows && wantToTryRows.length > 0 && wantToTryRows[0].places) {
+          fetchedWantToTry = Array.isArray(wantToTryRows[0].places) ? wantToTryRows[0].places : [];
+        } else {
+          // No error, but no data or malformed data, so list is empty
+          fetchedWantToTry = [];
         }
 
-        // Fetch Saved places
-        const { data: savedData, error: savedError } = await supabase
-          .from('saved_places')
-          .select('places')
-          .eq('user_id', user.id)
-          .single();
+        // Only proceed if the first fetch didn't encounter an error
+        if (!encounteredError) {
+          // Fetch Saved places
+          const { data: savedRows, error: savedError } = await supabase
+            .from('saved_places')
+            .select('places')
+            .eq('user_id', user.id)
+            .limit(1); // Use limit(1) instead of single()
 
-        if (savedError && savedError.code !== 'PGRST116') {
-          console.error('Error fetching saved_places:', savedError);
-          setError('Failed to load your Saved Places list.');
-        } else if (savedData?.places) {
-          setSavedPlaces(Array.isArray(savedData.places) ? savedData.places : []);
+          if (savedError) {
+            console.error('Error fetching saved_places:', savedError);
+            encounteredError = 'Failed to load your Saved Places list.';
+          } else if (savedRows && savedRows.length > 0 && savedRows[0].places) {
+            fetchedSavedPlaces = Array.isArray(savedRows[0].places) ? savedRows[0].places : [];
+          } else {
+            // No error, but no data or malformed data, so list is empty
+            fetchedSavedPlaces = [];
+          }
         }
       } catch (err) {
-        console.error('Error fetching places:', err);
-        setError('An unexpected error occurred.');
+        console.error('Unexpected error fetching places:', err);
+        encounteredError = 'An unexpected error occurred while fetching your lists.';
       } finally {
+        if (encounteredError) {
+          setError(encounteredError);
+        }
+        setWantToTryPlaces(fetchedWantToTry);
+        setSavedPlaces(fetchedSavedPlaces);
         setIsLoading(false);
       }
     };
