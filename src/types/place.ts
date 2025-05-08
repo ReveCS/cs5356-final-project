@@ -11,4 +11,5 @@ export interface Place {
   place_id?: string;   // Google Place ID
   lat?: number;        // Latitude from Supabase/MapExplorer
   long?: number;       // Longitude from Supabase/MapExplorer
+  editorial_summary?: string; // Editorial summary or overview of the place
 }

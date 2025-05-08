@@ -13,9 +13,9 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const searchPlace = async (searchQuery) => {
+const getPlaceDetails = async (placeId) => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    const baseUrl = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+    const baseUrl = 'https://maps.googleapis.com/maps/api/place/details/json';
     
     if (!apiKey) {
         console.error('Error: Google Maps API key is required. Please check your .env file.');
@@ -23,31 +23,29 @@ const searchPlace = async (searchQuery) => {
     }
     
     try {
-        const response = await fetch(`${baseUrl}?query=${encodeURIComponent(searchQuery)}&key=${apiKey}`);
+        const response = await fetch(`${baseUrl}?place_id=${placeId}&fields=editorial_summary&key=${apiKey}`);
         const data = await response.json();
         
-        if (data.status === 'OK' && data.results.length > 0) {
-            const place = data.results[0];
-            console.log('Place Name:', place.name);
-            console.log('Place ID:', place.place_id);
-            return place.place_id;
+        if (data.status === 'OK' && data.result) {
+            return data.result.editorial_summary?.overview || null;
         } else {
             console.error('No results found or error occurred:', data.status);
             return null;
         }
     } catch (error) {
-        console.error('Error searching for place:', error);
+        console.error('Error fetching place details:', error);
         return null;
     }
 };
 
 const processPlaces = async () => {
     try {
-        // Fetch places from Supabase that don't have a place_id
+        // Fetch places from Supabase that have a place_id but no description
         const { data: places, error } = await supabase
             .from('places')
             .select('*')
-            .is('place_id', null);
+            .not('place_id', 'is', null)
+            .is('description', null);
 
         if (error) {
             throw error;
@@ -57,23 +55,24 @@ const processPlaces = async () => {
 
         // Process each place
         for (const place of places) {
-            const searchQuery = `${place.name}, ${place.address}`;
-            console.log(`Searching for: ${searchQuery}`);
+            console.log(`Processing place: ${place.name}`);
             
-            const placeId = await searchPlace(searchQuery);
+            const editorialSummary = await getPlaceDetails(place.place_id);
             
-            if (placeId) {
-                // Update the place in Supabase with the Google Place ID
+            if (editorialSummary) {
+                // Update the place in Supabase with the editorial summary
                 const { error: updateError } = await supabase
                     .from('places')
-                    .update({ place_id: placeId })
+                    .update({ description: editorialSummary })
                     .eq('id', place.id);
 
                 if (updateError) {
                     console.error(`Error updating place ${place.id}:`, updateError);
                 } else {
-                    console.log(`Successfully updated place ${place.id} with Place ID: ${placeId}`);
+                    console.log(`Successfully updated place ${place.id} with description`);
                 }
+            } else {
+                console.log(`No editorial summary found for place ${place.id}`);
             }
 
             // Add a small delay to avoid hitting API rate limits
@@ -86,10 +85,10 @@ const processPlaces = async () => {
     }
 };
 
-// Run the process
+// Run the script
 processPlaces();
 
 // Export the functions if using in Node.js
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { searchPlace, processPlaces };
+    module.exports = { getPlaceDetails, processPlaces };
 } 

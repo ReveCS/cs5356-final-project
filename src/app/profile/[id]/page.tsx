@@ -14,6 +14,7 @@ interface Profile {
   id: string;
   first_name: string;
   last_name: string;
+  created_at: string;
 }
 
 interface PageProps {
@@ -52,7 +53,7 @@ export default function ProfilePage({ params }: PageProps) {
         // Fetch profile data
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name')
+          .select('id, first_name, last_name, created_at')
           .eq('id', profileId)
           .single();
 
@@ -189,7 +190,7 @@ export default function ProfilePage({ params }: PageProps) {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.back()}
+          onClick={() => router.push('/')}
           className="flex items-center text-sm text-gray-600 hover:text-gray-900"
         >
           <ChevronLeft className="h-5 w-5 mr-1" />

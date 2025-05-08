@@ -174,6 +174,9 @@ export default function ListComponent({ isOpen, onClose, onPlaceSelect }: ListCo
                         >
                           <p className="font-medium text-gray-800 text-sm">{place.name}</p>
                           <p className="text-xs text-gray-500">{place.address}</p>
+                          {place.editorial_summary && (
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{place.editorial_summary}</p>
+                          )}
                         </div>
                         <button
                           onClick={(e) => {

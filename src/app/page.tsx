@@ -48,6 +48,7 @@ interface DailyPlace {
   long: number; // Matches Supabase table column
   description?: string; // Optional description
   place_id: string;
+  category?: string; // Optional category
 }
 
 interface StoredRecommendation {
@@ -148,15 +149,47 @@ export default function HomePage() {
 
     const fetchRandomPlace = async () => {
       try {
-        const { data, error } = await supabase.rpc('get_random_place');
-
-        if (error) {
-          console.error("Error fetching random place:", error);
-          throw error;
+        // First get a random place_id from want_to_try_places or saved_places
+        const { data: randomPlaceData, error: randomError } = await supabase.rpc('get_random_place');
+        
+        if (randomError) {
+          console.error("Error getting random place:", randomError);
+          throw randomError;
         }
 
-        if (data && data.length > 0) {
-          const newPlace: DailyPlace = { ...data[0], description: "" };
+        if (!randomPlaceData || randomPlaceData.length === 0) {
+          setDailyRecommendationPlace(null);
+          localStorage.removeItem(storageKey);
+          return;
+        }
+
+        console.log("Random place data:", randomPlaceData[0]);
+
+        // Then fetch the full place details from places table
+        const { data: placeDetails, error: detailsError } = await supabase
+          .from('places')
+          .select('*')
+          .eq('place_id', randomPlaceData[0].place_id)
+          .single();
+
+        if (detailsError) {
+          console.error("Error fetching place details:", detailsError);
+          throw detailsError;
+        }
+
+        console.log("Place details from places table:", placeDetails);
+
+        if (placeDetails) {
+          const newPlace: DailyPlace = {
+            ...placeDetails,
+            lat: placeDetails.lat,
+            long: placeDetails.long,
+            place_id: placeDetails.place_id,
+            description: placeDetails.description || '',
+            category: placeDetails.category || ''
+          };
+          
+          console.log("Final place object:", newPlace);
           setDailyRecommendationPlace(newPlace);
           // Store the new recommendation and today's date
           const recommendationToStore: StoredRecommendation = {
@@ -169,7 +202,7 @@ export default function HomePage() {
           localStorage.removeItem(storageKey);
         }
       } catch (error) {
-        console.error("Error fetching random place:", error);
+        console.error("Error in fetchRandomPlace:", error);
         setDailyRecommendationPlace(null);
       }
     };
@@ -318,23 +351,25 @@ export default function HomePage() {
             <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-[1.02]">
               <div className="p-4"> 
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="p-2 bg-[#0D4E4A]/10 rounded-lg">
+                    <svg className="w-5 h-5 text-[#0D4E4A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                     </svg>
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900">Daily Recommendation</h3>
+                  <h3 className="text-base font-semibold text-[#0D4E4A]">Daily Recommendation</h3>
                 </div>
                 {dailyRecommendationPlace ? (
                   <div className="space-y-2.5">
                     <h4 className="text-base font-medium text-gray-900 truncate">{dailyRecommendationPlace.name}</h4> 
-                    {dailyRecommendationPlace.description && (
-                      <p className="text-sm text-gray-500 line-clamp-2">{dailyRecommendationPlace.description}</p>
+                    {dailyRecommendationPlace.category && (
+                      <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-[#0D4E4A]/10 text-[#0D4E4A] rounded-full">
+                        {dailyRecommendationPlace.category}
+                      </span>
                     )}
                     <div className="flex items-center justify-between pt-2">
                       <Link
                         href={`/map?place=${dailyRecommendationPlace.place_id}`}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1.5"
+                        className="text-sm text-[#0D4E4A] hover:text-[#0D4E4A]/80 font-medium flex items-center gap-1.5 transition-colors"
                       >
                         View on Map Explorer
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
