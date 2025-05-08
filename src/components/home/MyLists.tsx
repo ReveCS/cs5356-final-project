@@ -170,12 +170,6 @@ export default function MyLists() {
           emptyMessage="No saved places yet"
         />
 
-        <div className="pt-2">
-          <Button variant="outline" className="w-full gap-2">
-            <Plus className="h-4 w-4" />
-            Create New List
-          </Button>
-        </div>
       </div>
     </ScrollArea>
   );

@@ -433,8 +433,8 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
           disabled={isLoading}
           className={`flex-1 py-2.5 px-4 rounded-lg text-base font-medium transition-colors ${
             isInWantToTry
-              ? 'bg-green-500 text-white'
-              : 'bg-purple-500 text-white hover:bg-purple-600'
+              ? 'bg-[#0D4E4A]/80 text-white'
+              : 'bg-[#0D4E4A] text-white hover:bg-[#0D4E4A]/90'
           }`}
         >
           {isLoading ? 'Updating...' : isInWantToTry ? '✓ Added' : 'Want to Try'}
@@ -444,8 +444,8 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
           disabled={isLoading}
           className={`flex-1 py-2.5 px-4 rounded-lg text-base font-medium transition-colors ${
             isInSaved
-              ? 'bg-green-500 text-white'
-              : 'bg-blue-500 text-white hover:bg-blue-600'
+              ? 'bg-[#E6D5BC]/80 text-gray-800'
+              : 'bg-[#E6D5BC] text-gray-800 hover:bg-[#FFEDD4]'
           }`}
         >
           {isLoading ? 'Updating...' : isInSaved ? '✓ Saved' : 'Save Place'}
@@ -453,126 +453,139 @@ export default function PlaceCard({ place, onClose }: PlaceCardProps) {
       </div>
 
       {/* Details Section */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Description */}
         {place.description && (
-          <div className="flex items-start space-x-3">
-            <div className="text-gray-400 mt-1">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700">About</h3>
-              <p className="text-gray-600 text-sm">{place.description}</p>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="text-gray-400 mt-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-700">About</h3>
+                <p className="text-gray-600 text-sm">{place.description}</p>
+              </div>
             </div>
           </div>
         )}
 
         {/* Address */}
-        <div className="flex items-start space-x-3">
-          <div className="text-gray-400 mt-1">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="font-medium text-gray-700">Address</h3>
-            <p className="text-gray-600 text-sm">{placeDetails?.formatted_address || place.address}</p>
+        <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <div className="text-gray-400 mt-1">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-medium text-gray-700">Address</h3>
+              <p className="text-gray-600 text-sm">{placeDetails?.formatted_address || place.address}</p>
+            </div>
           </div>
         </div>
 
         {/* Hours */}
         {placeDetails?.opening_hours && (
-          <div className="flex items-start space-x-3">
-            <div className="text-gray-400 mt-1">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700">Hours</h3>
-              <p className="text-gray-600 text-sm">
-                {placeDetails.opening_hours.isOpen?.() ? (
-                  <span className="text-green-600">Open now</span>
-                ) : (
-                  <span className="text-red-600">Closed</span>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="text-gray-400 mt-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-700">Hours</h3>
+                <p className="text-gray-600 text-sm">
+                  {placeDetails.opening_hours.isOpen?.() ? (
+                    <span className="text-green-600">Open now</span>
+                  ) : (
+                    <span className="text-red-600">Closed</span>
+                  )}
+                </p>
+                {placeDetails.opening_hours.weekday_text && (
+                  <div className="mt-1">
+                    {placeDetails.opening_hours.weekday_text.map((day, index) => (
+                      <p key={index} className="text-sm text-gray-600">
+                        {day}
+                      </p>
+                    ))}
+                  </div>
                 )}
-              </p>
-              {placeDetails.opening_hours.weekday_text && (
-                <div className="mt-1">
-                  {placeDetails.opening_hours.weekday_text.map((day, index) => (
-                    <p key={index} className="text-sm text-gray-600">
-                      {day}
-                    </p>
-                  ))}
-                </div>
-              )}
+              </div>
             </div>
           </div>
         )}
 
         {/* Website */}
         {placeDetails?.website && (
-          <div className="flex items-start space-x-3">
-            <div className="text-gray-400 mt-1">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700">Website</h3>
-              <a
-                href={placeDetails.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline text-sm"
-              >
-                Visit website
-              </a>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="text-gray-400 mt-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-700">Website</h3>
+                <a
+                  href={placeDetails.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#0D4E4A] hover:underline text-sm"
+                >
+                  Visit website
+                </a>
+              </div>
             </div>
           </div>
         )}
 
         {/* Phone */}
         {placeDetails?.formatted_phone_number && (
-          <div className="flex items-start space-x-3">
-            <div className="text-gray-400 mt-1">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-700">Phone</h3>
-              <a
-                href={`tel:${placeDetails.formatted_phone_number}`}
-                className="text-blue-500 hover:underline text-sm"
-              >
-                {placeDetails.formatted_phone_number}
-              </a>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="text-gray-400 mt-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-700">Phone</h3>
+                <a
+                  href={`tel:${placeDetails.formatted_phone_number}`}
+                  className="text-[#0D4E4A] hover:underline text-sm"
+                >
+                  {placeDetails.formatted_phone_number}
+                </a>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Reviews */}
+        {/* Reviews Section with Divider */}
         {placeDetails?.reviews && placeDetails.reviews.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-medium text-gray-700 mb-3">Recent Reviews</h3>
-            <div className="space-y-4">
-              {placeDetails.reviews.slice(0, 3).map((review, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <span className="text-yellow-400 text-lg">★</span>
-                    <span className="ml-2 text-sm font-medium text-gray-700">
-                      {review.author_name}
-                    </span>
+          <>
+            <div className="border-t border-gray-200 my-3"></div>
+            <div>
+              <h3 className="font-medium text-gray-700 mb-2">Recent Reviews</h3>
+              <div className="space-y-2">
+                {placeDetails.reviews.slice(0, 3).map((review, index) => (
+                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <span className="text-yellow-400 text-lg">★</span>
+                      <span className="ml-2 text-sm font-medium text-gray-700">
+                        {review.author_name}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">{review.text}</p>
                   </div>
-                  <p className="text-sm text-gray-600">{review.text}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
