@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Place } from '@/types/place';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthContext';
 import { Trash2 } from 'lucide-react';
