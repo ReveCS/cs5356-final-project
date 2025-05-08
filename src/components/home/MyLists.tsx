@@ -17,7 +17,15 @@ export default function MyLists() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    // If there's no user, or no user ID, we can't fetch their lists.
+    // Clear any existing data and set loading to false.
+    if (!user || !user.id) {
+      setWantToTryPlaces([]);
+      setSavedPlaces([]);
+      setIsLoading(false); // Important to set loading to false if we're not fetching
+      setError(null);      // Clear any previous error
+      return;
+    }
 
     const fetchPlaces = async () => {
       setIsLoading(true);
@@ -33,7 +41,7 @@ export default function MyLists() {
           .from('want_to_try_places')
           .select('places')
           .eq('user_id', user.id)
-          .limit(1); // Use limit(1) instead of single()
+          .limit(1);
 
         if (wantError) {
           console.error('Error fetching want_to_try_places:', wantError);
@@ -52,7 +60,7 @@ export default function MyLists() {
             .from('saved_places')
             .select('places')
             .eq('user_id', user.id)
-            .limit(1); // Use limit(1) instead of single()
+            .limit(1);
 
           if (savedError) {
             console.error('Error fetching saved_places:', savedError);
@@ -78,7 +86,7 @@ export default function MyLists() {
     };
 
     fetchPlaces();
-  }, [user]);
+  }, [user?.id]); // Changed dependency from [user] to [user?.id]
 
   if (isLoading) {
     return (
