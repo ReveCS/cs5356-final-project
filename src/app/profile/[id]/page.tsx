@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Place } from '@/types/place';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PlaceList from '@/components/profile/PlaceList';
 
@@ -184,6 +186,16 @@ export default function ProfilePage({ params }: PageProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.back()}
+          className="flex items-center text-sm text-gray-600 hover:text-gray-900"
+        >
+          <ChevronLeft className="h-5 w-5 mr-1" />
+          Back
+        </Button>
+      </div>
       <div className="space-y-8">
         <ProfileHeader profile={profile} />
         <PlaceList

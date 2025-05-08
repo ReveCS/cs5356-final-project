@@ -10,6 +10,7 @@ import {
   NavigationMenuContent,
 } from '@/components/ui/navigation-menu';
 import { useAuth } from '@/components/AuthContext';
+import Link from 'next/link';
 
 export default function NavigationBar() {
   const { user, firstName } = useAuth();
@@ -43,13 +44,13 @@ export default function NavigationBar() {
                 {navItems.map((item) => (
                   <li key={item.id}>
                     <NavigationMenuLink asChild>
-                      <a
+                      <Link
                         href={item.href}
                         className="flex items-center p-2 rounded-md hover:bg-gray-100 hover:text-gray-900 transition-colors"
                       >
                         {item.icon}
                         {item.name}
-                      </a>
+                      </Link>
                     </NavigationMenuLink>
                   </li>
                 ))}
