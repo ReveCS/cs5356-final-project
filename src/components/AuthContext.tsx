@@ -37,30 +37,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    console.log('AuthProvider useEffect mounting');
+    console.log('AuthProvider: useEffect mounting. Initial loading state:', loading);
 
     // Get initial session
     const initializeAuth = async () => {
+      console.log('AuthProvider: initializeAuth started.');
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('AuthProvider: Calling supabase.auth.getSession()...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('AuthProvider: supabase.auth.getSession() returned.', { sessionDetails: session, errorDetails: sessionError });
         
-        if (!mounted) return;
+        if (sessionError) {
+          console.error('AuthProvider: Error from getSession():', sessionError);
+        } 
+
+        if (!mounted) {
+          console.log('AuthProvider: initializeAuth - component unmounted during getSession, returning.');
+          return;
+        }
 
         setSession(session);
         setUser(session?.user ?? null);
+        console.log('AuthProvider: initializeAuth - user set to:', session?.user ?? null);
+
         if (session?.user) {
+          console.log('AuthProvider: initializeAuth - user found, fetching profile for', session.user.id);
           await fetchProfile(session.user.id);
+          console.log('AuthProvider: initializeAuth - profile fetched.');
+        } else{
+          console.log('AuthProvider: initializeAuth - no user session found.');
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('AuthProvider: Error in initializeAuth catch block:', error);
       } finally {
         if (mounted) {
+          console.log('AuthProvider: initializeAuth - setting loading to false.');
           setLoading(false);
+        } else {
+          console.log('AuthProvider: initializeAuth - component unmounted, not setting loading state.');
         }
       }
     };
 
     initializeAuth();
+    console.log('AuthProvider: Setting up onAuthStateChange listener.');
 
     // Listen for auth changes
     const {
@@ -70,40 +90,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setSession(session);
       setUser(session?.user ?? null);
+      console.log('AuthProvider: onAuthStateChange - user set to:', session?.user ?? null);
       if (session?.user) {
+        console.log('AuthProvider: onAuthStateChange - user found, fetching profile for', session.user.id);
         await fetchProfile(session.user.id);
+        console.log('AuthProvider: onAuthStateChange - profile fetched.');
       } else {
+        console.log('AuthProvider: onAuthStateChange - no user session, setting firstName to null.');
         setFirstName(null);
       }
+      console.log('AuthProvider: onAuthStateChange - setting loading to false.');
       setLoading(false);
     });
 
     return () => {
       mounted = false;
-      console.log('AuthProvider useEffect unmounting/cleaning up');
+      console.log('AuthProvider: useEffect cleanup. Unsubscribing from onAuthStateChange.');
       subscription.unsubscribe();
     };
   }, []);
 
   const fetchProfile = async (userId: string) => {
+    console.log(`AuthProvider: fetchProfile started for userId: ${userId}`);
     try {
+      console.log(`AuthProvider: fetchProfile - Calling Supabase to get profile for ${userId}`);
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('first_name')
         .eq('id', userId)
         .single();
+      console.log(`AuthProvider: fetchProfile - Supabase call returned for ${userId}`, { profileData, profileError });
 
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
+        console.error(`AuthProvider: fetchProfile - Error fetching profile for ${userId}:`, profileError);
         setFirstName(null);
       } else if (profileData) {
+        console.log(`AuthProvider: fetchProfile - Profile data found for ${userId}, setting firstName:`, profileData.first_name);
         setFirstName(profileData.first_name);
       } else {
+        console.log(`AuthProvider: fetchProfile - No profile data found for ${userId}, setting firstName to null.`);
         setFirstName(null);
       }
     } catch (err) {
-      console.error('Error in fetchProfile:', err);
+      console.error(`AuthProvider: fetchProfile - Caught an error for ${userId}:`, err);
       setFirstName(null);
+    } finally {
+      console.log(`AuthProvider: fetchProfile finished for userId: ${userId}`);
     }
   };
 
