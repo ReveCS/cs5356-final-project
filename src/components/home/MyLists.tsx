@@ -6,8 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Place } from '@/types/place';
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { List, Star, Plus } from "lucide-react";
+import { List, Star } from "lucide-react";
 
 export default function MyLists() {
   const { user } = useAuth();
@@ -107,11 +106,11 @@ export default function MyLists() {
   }
 
   const PlaceCard = ({ place }: { place: Place }) => (
-    <Card className="hover:bg-gray-50 transition-colors min-w-[200px]">
+    <Card className="hover:bg-gray-50 transition-colors min-w-[160px] flex-shrink-0">
       <CardContent className="p-3">
         <div className="flex items-center gap-2">
-          <div className="bg-teal-100 p-1.5 rounded-md">
-            <List className="h-4 w-4 text-teal-600" />
+          <div className="bg-[#0D4E4A]/10 p-1.5 rounded-md">
+            <List className="h-3.5 w-3.5 text-[#0D4E4A]" />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-gray-900 text-sm truncate">{place.name}</h3>
@@ -133,44 +132,45 @@ export default function MyLists() {
     places: Place[]; 
     emptyMessage: string;
   }) => (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Icon className="h-5 w-5 text-teal-600" />
+        <Icon className="h-5 w-5 text-[#0D4E4A]" />
         <h3 className="font-medium text-gray-900">{title}</h3>
       </div>
-      <ScrollArea className="w-full">
-        <div className="flex gap-2 pb-4">
-          {places.length === 0 ? (
-            <div className="text-sm text-gray-500 italic">{emptyMessage}</div>
-          ) : (
-            places.map((place) => (
-              <PlaceCard key={place.id} place={place} />
-            ))
-          )}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      <div className="relative h-[120px] overflow-hidden">
+          <div className="flex gap-4 pb-4 pr-4">
+            {places.length === 0 ? (
+              <div className="text-sm text-gray-500 italic">{emptyMessage}</div>
+            ) : (
+              places.map((place) => (
+                <PlaceCard key={place.id} place={place} />
+              ))
+            )}
+          </div>
+      </div>
     </div>
   );
 
   return (
-    <ScrollArea className="h-full"> {/* Make the entire component scrollable */}
-      <div className="space-y-6 p-1"> {/* Add some padding if needed */}
-        <ListSection
-          title="Want to Try"
-          icon={List}
-          places={wantToTryPlaces}
-          emptyMessage="No places in your Want to Try list yet"
-        />
+    <div className="h-full">
+      <ScrollArea className="h-full">
+        <div className="space-y-8 p-1">
+          <ListSection
+            title="Want to Try"
+            icon={List}
+            places={wantToTryPlaces}
+            emptyMessage="No places in your Want to Try list yet"
+          />
 
-        <ListSection
-          title="Saved Places"
-          icon={Star}
-          places={savedPlaces}
-          emptyMessage="No saved places yet"
-        />
-
-      </div>
-    </ScrollArea>
+          <ListSection
+            title="Saved Places"
+            icon={Star}
+            places={savedPlaces}
+            emptyMessage="No saved places yet"
+          />
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    </div>
   );
 } 

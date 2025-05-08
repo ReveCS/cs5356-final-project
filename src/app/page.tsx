@@ -398,30 +398,30 @@ export default function HomePage() {
               </Button>
             </div>
 
-            <ScrollArea className="w-148 whitespace-nowrap rounded-md">
+            <ScrollArea className="w-180 whitespace-nowrap rounded-md">
               <div className="flex w-max space-x-4 p-4">
                 {RECOMMENDED_LISTS.map((list) => (
-                  <Card key={list.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
-                    <CardContent className="p-3 flex items-center gap-3">
-                      <div className="bg-orange-100 p-2 rounded-md">
-                        <List className="h-5 w-5 text-orange-600" />
+                  <Card key={list.id} className="hover:bg-gray-50 transition-colors cursor-pointer min-w-[200px]">
+                    <CardContent className="p-2.5 flex items-center gap-2">
+                      <div className="bg-orange-100 p-1.5 rounded-md">
+                        <List className="h-4 w-4 text-orange-600" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{list.title}</h3>
-                        <p className="text-sm text-gray-500">{list.places} places</p>
+                        <h3 className="font-medium text-gray-900 text-sm">{list.title}</h3>
+                        <p className="text-xs text-gray-500">{list.places} places</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
+                      <div className="flex items-center gap-1.5">
+                        <Avatar className="h-5 w-5">
                           <AvatarFallback>{list.author.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-gray-500">{list.author}</span>
+                        <span className="text-[10px] text-gray-500">{list.author}</span>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
               <ScrollBar orientation="horizontal" />
-            </ScrollArea >
+            </ScrollArea>
           </div>
 
           {/* My Lists Section */}
